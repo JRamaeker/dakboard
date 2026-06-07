@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1080, initial-scale=1.0, shrink-to-fit=no">
 <title>Dakboard Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/ical.js/build/ical.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
   html, body {
     height: 100%;
@@ -594,20 +595,46 @@ function updateClock() {
 setInterval(updateClock, 1000);
 updateClock();
 
-// ── SAMPLE EVENTS (replace with Google Calendar API) ──
-const calEvents = [
-  { date:'2026-06-07', title:'Family Dinner',           time:'6:00 PM', color:'#ff3366' },
-  { date:'2026-06-07', title:'ND Baseball Watch Party', time:'8:00 PM', color:'#C99700' },
-  { date:'2026-06-09', title:'Soccer Practice',         time:'4:30 PM', color:'#00e5ff' },
-  { date:'2026-06-10', title:'Doctor Appt.',            time:'9:30 AM', color:'#7c3aed' },
-  { date:'2026-06-10', title:'Grocery Run',             time:'5:00 PM', color:'#ff3366' },
-  { date:'2026-06-12', title:'ND Super Regional',       time:'2:00 PM', color:'#C99700' },
-  { date:'2026-06-14', title:'School Play',             time:'7:00 PM', color:'#ff3366' },
-  { date:'2026-06-18', title:'Book Club',               time:'7:30 PM', color:'#00e5ff' },
-  { date:'2026-06-21', title:'Date Night',              time:'7:00 PM', color:'#ffea00' },
-  { date:'2026-06-24', title:'Dentist',                 time:'11:00 AM',color:'#7c3aed' },
-  { date:'2026-06-28', title:'ND Football Scrimmage',   time:'10:00 AM',color:'#C99700' },
+const ICAL_URLS = [
+  'https://calendar.google.com/calendar/ical/d80f4844ae8c2f869f660d6e6078b0f184451702d45fbbd2f3a66692f80c1f50%40group.calendar.google.com/private-7022698de91dfb34b8f41e91958c036a/basic.ics',
+  'https://calendar.google.com/calendar/ical/jramaeker%40gmail.com/private-ed1cf5264075361bc34ca0206faf1750/basic.ics',
+  'https://calendar.google.com/calendar/ical/a53339bf3b5e37f4057d8f4a42b90ef80e5cad84eae80fabc97eaffc0589ad02%40group.calendar.google.com/private-c14d773eaca26a4cc83d53db421a1411/basic.ics',
+  'https://calendar.google.com/calendar/ical/220e3efc2bf8ebcc0aa3969aa5d6917b7ddddabde6c1e5b01557dc9cf45253b7%40group.calendar.google.com/private-a88e92d6b25959e79272f2be95773e17/basic.ics',
+  'https://calendar.google.com/calendar/ical/c9a812107a0db75640adc93b84b0529027d096a869e96f14a4bdfeee9558c6f5%40group.calendar.google.com/private-0c232096752fadad189dcc091d66eb0f/basic.ics',
+  'https://calendar.google.com/calendar/ical/family11371226280449696764%40group.calendar.google.com/private-b43b14ddf86a7bd4db612128fbd3fa75/basic.ics',
 ];
+
+const calEvents = [];
+
+async function fetchOneCalendar(url) {
+  try {
+    const proxy = 'https://api.allorigins.win/raw?url=';
+    const res = await fetch(proxy + encodeURIComponent(url));
+    const text = await res.text();
+    const jcal = ICAL.parse(text);
+    const comp = new ICAL.Component(jcal);
+    const vevents = comp.getAllSubcomponents('vevent');
+    const colors = ['#ff3366','#C99700','#7c3aed','#00e5ff','#ffea00','#00e676'];
+    vevents.forEach(ev => {
+      const event = new ICAL.Event(ev);
+      const start = event.startDate.toJSDate();
+      const color = colors[Math.abs((event.summary || '').charCodeAt(0)) % colors.length];
+      calEvents.push({
+        date:  start.toISOString().slice(0,10),
+        title: event.summary || '(No title)',
+        time:  start.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+        color
+      });
+    });
+  } catch(err) {
+    console.error('Failed to load calendar:', url, err);
+  }
+}
+
+async function loadCalendar() {
+  await Promise.all(ICAL_URLS.map(url => fetchOneCalendar(url)));
+  calEvents.sort((a,b) => a.date.localeCompare(b.date));
+}
 
 const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -678,7 +705,10 @@ function buildCalendar() {
   const rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
   for (let d = 1; d <= rem; d++) addCell(d, 'other-month', null);
 }
-buildCalendar();
+loadCalendar().then(() => {
+  buildCalendar();
+  buildAgenda();
+});
 
 // ── HORIZONTAL 5-DAY AGENDA STRIP ──
 function buildAgenda() {
