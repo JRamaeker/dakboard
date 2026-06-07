@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, initial-scale=1.0">
+<title>Dakboard Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:             #080810;
+    --surface:        #10101c;
+    --surface2:       #181828;
+    --border:         #232338;
+    --nd-gold:        #C99700;
+    --nd-gold-dim:    #7a5b00;
+    --nd-navy:        #0C2340;
+    --cowboys-blue:   #003594;
+    --cowboys-silver: #869397;
+    --green:          #00e676;
+    --red:            #ff1744;
+    --cyan:           #00e5ff;
+    --yellow:         #ffea00;
+    --text:           #eeeeff;
+    --muted:          #6666aa;
+    --font-d: 'Bebas Neue', sans-serif;
+    --font-b: 'DM Sans', sans-serif;
+    --font-m: 'Space Mono', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-b);
+    width: 1080px;
+    min-height: 1920px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background:
+      radial-gradient(ellipse 700px 600px at 5% 0%,   rgba(12,35,64,0.5)   0%, transparent 70%),
+      radial-gradient(ellipse 500px 500px at 95% 40%,  rgba(201,151,0,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 20% 100%, rgba(0,53,148,0.18)  0%, transparent 70%);
+    pointer-events:none; z-index:0;
+  }
+
+  .dashboard {
+    position:relative; z-index:1;
+    display:flex; flex-direction:column;
+    min-height:1920px;
+  }
+
+  /* ══════════════════════════
+     TOP STRIP — time + weather
+  ══════════════════════════ */
+  .top-strip {
+    display:flex; align-items:stretch;
+    border-bottom: 2px solid var(--border);
+    animation: fadeUp .4s ease both;
+  }
+  .time-pill {
+    background: linear-gradient(135deg,#0C2340 0%,#162e52 100%);
+    padding: 24px 36px;
+    display:flex; align-items:center; gap:20px;
+    flex-shrink:0;
+    border-right: 3px solid var(--nd-gold);
+  }
+  .clock-num {
+    font-family: var(--font-d);
+    font-size: 88px;
+    line-height:1;
+    color:#fff;
+    letter-spacing:1px;
+  }
+  .clock-secs {
+    font-family: var(--font-m);
+    font-size: 26px;
+    color: var(--nd-gold);
+  }
+  .date-col { display:flex; flex-direction:column; justify-content:center; gap:3px; }
+  .date-dayname {
+    font-family: var(--font-d);
+    font-size: 32px; letter-spacing:3px;
+    color: var(--nd-gold); line-height:1;
+  }
+  .date-full {
+    font-size:14px; color:rgba(255,255,255,0.45);
+    letter-spacing:1.5px; text-transform:uppercase;
+  }
+
+  .weather-strip {
+    flex:1; background:var(--surface);
+    padding:16px 32px;
+    display:flex; flex-direction:column; justify-content:space-between;
+    gap:12px;
+  }
+  .wx-top { display:flex; align-items:center; justify-content:space-between; }
+  .wx-left { display:flex; align-items:center; gap:14px; }
+  .wx-icon { font-size:46px; filter:drop-shadow(0 0 10px rgba(0,229,255,0.4)); }
+  .wx-temp {
+    font-family:var(--font-d); font-size:64px; line-height:1; color:var(--cyan);
+  }
+  .wx-temp sup { font-size:28px; vertical-align:top; margin-top:8px; display:inline-block; }
+  .wx-desc { font-size:15px; color:var(--text); margin-top:2px; }
+  .wx-loc  { font-size:11px; color:var(--muted); letter-spacing:1px; margin-top:2px; }
+  .wx-stats { display:flex; gap:20px; align-items:center; }
+  .wx-stat { text-align:center; }
+  .wx-stat-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  .wx-stat-val { font-family:var(--font-m); font-size:16px; color:var(--cyan); margin-top:2px; }
+
+  /* 5-day forecast row */
+  .wx-forecast {
+    display:flex; gap:0;
+    border-top:1px solid var(--border);
+    padding-top:10px;
+  }
+  .wx-fc-day {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px;
+    padding: 0 4px;
+    border-right:1px solid var(--border);
+  }
+  .wx-fc-day:last-child { border-right:none; }
+  .wx-fc-day.today-fc .wx-fc-label { color:var(--nd-gold); font-weight:700; }
+  .wx-fc-label { font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+  .wx-fc-icon  { font-size:22px; line-height:1; }
+  .wx-fc-hi    { font-family:var(--font-m); font-size:15px; color:var(--text); }
+  .wx-fc-lo    { font-family:var(--font-m); font-size:12px; color:var(--muted); }
+  .wx-fc-precip { font-size:10px; color:var(--cyan); letter-spacing:1px; }
+
+  /* ══════════════════════════
+     CALENDAR — full-width hero
+  ══════════════════════════ */
+  .cal-section {
+    background: var(--surface);
+    padding: 40px 56px 40px;
+    border-bottom: 3px solid var(--nd-gold);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    animation: fadeUp .4s ease .08s both;
+  }
+
+  .cal-header {
+    display:flex; align-items:flex-end; justify-content:space-between;
+    margin-bottom:22px;
+  }
+  .cal-month-big {
+    font-family:var(--font-d);
+    font-size:80px; letter-spacing:4px; line-height:1;
+  }
+  .cal-month-big em { color:var(--nd-gold); font-style:normal; }
+  .cal-week-badge {
+    font-family:var(--font-m); font-size:18px; color:var(--muted);
+    border:1px solid var(--border); padding:6px 14px; border-radius:4px;
+    margin-bottom:8px;
+  }
+
+  /* Day-of-week headers */
+  .cal-dow-row {
+    display:grid; grid-template-columns:repeat(7,1fr);
+    margin-bottom:4px;
+  }
+  .cal-dow {
+    text-align:center; font-size:14px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--muted);
+    padding:6px 0; font-weight:500;
+  }
+  .cal-dow:first-child,.cal-dow:last-child { color:var(--nd-gold); opacity:.65; }
+  .cal-dow.today-col { color:var(--nd-gold) !important; opacity:1 !important; }
+  .cal-day.today-col-bg { background: rgba(201,151,0,0.06); }
+
+  /* Date cells — bigger since calendar is hero */
+  .cal-days-grid {
+    display:grid; grid-template-columns:repeat(7,1fr);
+    grid-auto-rows: 1fr;
+    gap:5px;
+    flex: 1;
+  }
+  .cal-day {
+    min-height: 0;
+    display:flex; flex-direction:column;
+    align-items:flex-start; justify-content:flex-start;
+    padding: 8px 8px 6px;
+    font-family:var(--font-m); font-size:15px;
+    border-radius:8px; position:relative; cursor:default;
+    background: var(--surface2);
+    transition: background .15s;
+  }
+  .cal-day.other-month { color:#2a2a44; background:transparent; }
+  .cal-day.today {
+    background: rgba(201,151,0,0.14);
+    border: 1px solid var(--nd-gold);
+  }
+  .day-num {
+    font-size:14px; line-height:1;
+    margin-bottom:4px;
+    width:100%; text-align:right;
+  }
+  .cal-day.today .day-num { color:var(--nd-gold); font-weight:700; }
+  .cal-event-pill {
+    width:100%;
+    font-family: var(--font-b);
+    font-size:10px; font-weight:600;
+    line-height:1.3;
+    padding:3px 5px;
+    border-radius:3px;
+    margin-bottom:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    color:#fff;
+  }
+  .cal-event-time {
+    font-size:9px; opacity:0.75; font-weight:400;
+    display:block; margin-bottom:1px; letter-spacing:0.5px;
+  }
+  .cal-more { font-size:9px; color:var(--muted); padding:1px 3px; }
+
+  /* ══════════════════════════════════════
+     HORIZONTAL 5-DAY AGENDA STRIP
+  ══════════════════════════════════════ */
+  .agenda-strip {
+    background: var(--surface2);
+    border-bottom: 2px solid var(--border);
+    padding: 0;
+    display:flex;
+    animation: fadeUp .4s ease .15s both;
+    overflow: hidden;
+  }
+
+  .agenda-day-col {
+    flex: 1;
+    border-right: 1px solid var(--border);
+    display:flex; flex-direction:column;
+    min-height: 220px;
+  }
+  .agenda-day-col:last-child { border-right:none; }
+
+  .agenda-day-header {
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    position:relative;
+  }
+  .agenda-count-badge {
+    position:absolute; top:12px; right:12px;
+    background: var(--nd-gold); color:#000;
+    font-size:10px; font-weight:700;
+    width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-m);
+  }
+  .agenda-day-header.is-today {
+    background: linear-gradient(135deg, rgba(201,151,0,0.18) 0%, transparent 80%);
+    border-bottom-color: var(--nd-gold);
+  }
+  .agenda-dow {
+    font-family: var(--font-d);
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .agenda-day-header.is-today .agenda-dow { color: var(--nd-gold); }
+  .agenda-daynum {
+    font-family: var(--font-d);
+    font-size: 44px;
+    line-height: 1;
+    color: var(--text);
+    margin-top: 2px;
+  }
+  .agenda-day-header.is-today .agenda-daynum { color: var(--nd-gold); }
+  .today-pill {
+    display:none;
+    position:absolute; top:14px; right:14px;
+    background: var(--nd-gold); color:#000;
+    font-size:10px; font-weight:700; letter-spacing:2px;
+    padding:3px 8px; border-radius:20px;
+    text-transform:uppercase;
+  }
+  .agenda-day-header.is-today .today-pill { display:block; }
+
+  .agenda-events {
+    flex:1;
+    padding: 10px 14px 14px;
+    display:flex; flex-direction:column; gap:8px;
+    overflow:hidden;
+  }
+  .agenda-event-chip {
+    display:flex; gap:8px; align-items:flex-start;
+  }
+  .chip-bar {
+    width:3px; border-radius:2px;
+    flex-shrink:0; align-self:stretch;
+    min-height:28px;
+  }
+  .chip-body {}
+  .chip-time {
+    font-family: var(--font-m);
+    font-size:11px; color:var(--muted);
+    margin-bottom:2px;
+  }
+  .chip-title {
+    font-size:14px; font-weight:500;
+    line-height:1.3; color:var(--text);
+  }
+  .no-events {
+    font-size:13px; color:var(--border);
+    font-style:italic; padding-top:4px;
+  }
+
+  /* ══════════════════════════
+     SPORTS
+  ══════════════════════════ */
+  .sports-section {
+    padding: 16px 56px;
+    border-bottom: 2px solid var(--border);
+    animation: fadeUp .4s ease .22s both;
+  }
+  .sports-header {
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:12px;
+  }
+  .sports-title { font-family:var(--font-d); font-size:20px; letter-spacing:5px; }
+  .live-badge {
+    font-size:10px; letter-spacing:2px; font-weight:700; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px;
+    background:rgba(255,23,68,0.12); color:var(--red);
+    border:1px solid rgba(255,23,68,0.35);
+  }
+  .live-dot {
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--red); margin-right:5px;
+    animation:blink 1s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+  /* unified scores ticker — ND/Cowboys inline when playing */
+  .scores-ticker { border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  .score-row {
+    display:flex; align-items:center;
+    padding:9px 18px; gap:12px;
+    border-bottom:1px solid var(--border);
+  }
+  .score-row:last-child { border-bottom:none; }
+  .score-row.featured-row { background: rgba(255,255,255,0.03); border-left: 3px solid transparent; }
+  .score-row.nd-row  { border-left-color: var(--nd-gold); }
+  .score-row.dfw-row { border-left-color: var(--cowboys-silver); }
+  .score-league {
+    font-size:9px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--muted); width:42px; flex-shrink:0;
+  }
+  .score-league.nd-league  { color:var(--nd-gold); }
+  .score-league.dfw-league { color:var(--cowboys-silver); }
+  .score-teams { flex:1; display:flex; flex-direction:column; gap:3px; }
+  .score-line  { display:flex; align-items:center; justify-content:space-between; }
+  .s-name { font-size:14px; font-weight:500; }
+  .s-pts  { font-family:var(--font-m); font-size:15px; font-weight:700; }
+  .s-win  .s-name { color:var(--text); }
+  .s-lose .s-name { color:var(--muted); }
+  .s-pts-w { color:var(--green); }
+  .s-pts-l { color:var(--muted); }
+  .score-status { font-size:10px; text-transform:uppercase; letter-spacing:1px; text-align:right; width:54px; flex-shrink:0; }
+  .st-live  { color:var(--red); font-weight:700; }
+  .st-final { color:var(--muted); }
+  .st-sched { color:var(--cyan); }
+  .score-note { font-size:10px; color:var(--muted); font-style:italic; flex-shrink:0; max-width:140px; text-align:right; line-height:1.3; }
+
+
+  /* ══════════════════════════
+     QUOTE OF THE DAY
+  ══════════════════════════ */
+  .quote-section {
+    padding: 24px 56px;
+    background: var(--nd-navy);
+    border-top: 1px solid rgba(201,151,0,0.2);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 24px;
+  }
+  .quote-mark {
+    font-family: var(--font-d);
+    font-size: 80px;
+    line-height: 0.8;
+    color: var(--nd-gold);
+    opacity: 0.35;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+  .quote-body {}
+  .quote-text {
+    font-size: 20px;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.2px;
+  }
+  .quote-author {
+    margin-top: 10px;
+    font-family: var(--font-m);
+    font-size: 13px;
+    color: var(--nd-gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ══════════════════════════
+     STATUS BAR
+  ══════════════════════════ */
+  .status-bar {
+    margin-top:auto;
+    background:var(--nd-navy);
+    border-top:3px solid var(--nd-gold);
+    padding:14px 56px;
+    display:flex; justify-content:space-between; align-items:center;
+    animation: fadeUp .4s ease .36s both;
+  }
+  .status-item {
+    display:flex; align-items:center; gap:8px;
+    font-size:14px; color:rgba(255,255,255,0.65);
+  }
+  .status-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--green); box-shadow:0 0 8px var(--green);
+    animation:blink 3s ease-in-out infinite;
+  }
+  .nd-mark { font-family:var(--font-d); font-size:18px; letter-spacing:2px; color:var(--nd-gold); }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(14px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- TOP STRIP -->
+  <div class="top-strip">
+    <div class="time-pill">
+      <div class="clock-num"><span id="hhmm">00:00</span><span class="clock-secs" id="ss">:00</span></div>
+      <div class="date-col">
+        <div class="date-dayname" id="dayname">SUNDAY</div>
+        <div class="date-full"    id="datefull">June 7, 2026</div>
+      </div>
+    </div>
+    <div class="weather-strip">
+      <div class="wx-top">
+        <div class="wx-left">
+          <div class="wx-icon">⛅</div>
+          <div>
+            <div class="wx-temp"><span>74</span><sup>°F</sup></div>
+            <div class="wx-desc">Partly Cloudy</div>
+            <div class="wx-loc">📍 Simonton Lake, IN</div>
+          </div>
+        </div>
+        <div class="wx-stats">
+          <div class="wx-stat"><div class="wx-stat-label">High</div><div class="wx-stat-val">79°</div></div>
+          <div class="wx-stat"><div class="wx-stat-label">Low</div><div class="wx-stat-val">61°</div></div>
+          <div class="wx-stat"><div class="wx-stat-label">Rain</div><div class="wx-stat-val">20%</div></div>
+          <div class="wx-stat"><div class="wx-stat-label">Wind</div><div class="wx-stat-val">9mph</div></div>
+          <div class="wx-stat"><div class="wx-stat-label">Humid</div><div class="wx-stat-val">58%</div></div>
+        </div>
+      </div>
+      <div class="wx-forecast">
+        <div class="wx-fc-day today-fc">
+          <div class="wx-fc-label">Today</div>
+          <div class="wx-fc-icon">⛅</div>
+          <div class="wx-fc-hi">79°</div>
+          <div class="wx-fc-lo">61°</div>
+          <div class="wx-fc-precip">💧 20%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Mon</div>
+          <div class="wx-fc-icon">🌧️</div>
+          <div class="wx-fc-hi">72°</div>
+          <div class="wx-fc-lo">57°</div>
+          <div class="wx-fc-precip">💧 70%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Tue</div>
+          <div class="wx-fc-icon">🌦️</div>
+          <div class="wx-fc-hi">68°</div>
+          <div class="wx-fc-lo">54°</div>
+          <div class="wx-fc-precip">💧 40%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Wed</div>
+          <div class="wx-fc-icon">☀️</div>
+          <div class="wx-fc-hi">76°</div>
+          <div class="wx-fc-lo">58°</div>
+          <div class="wx-fc-precip">💧 5%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Thu</div>
+          <div class="wx-fc-icon">🌤️</div>
+          <div class="wx-fc-hi">81°</div>
+          <div class="wx-fc-lo">63°</div>
+          <div class="wx-fc-precip">💧 10%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR HERO -->
+  <div class="cal-section">
+    <div class="cal-header">
+      <div class="cal-month-big" id="cal-heading">JUNE <em>2026</em></div>
+      <div class="cal-week-badge" id="cal-week-badge">WEEK 23</div>
+    </div>
+    <div class="cal-dow-row">
+      <div class="cal-dow">Sun</div><div class="cal-dow">Mon</div><div class="cal-dow">Tue</div>
+      <div class="cal-dow">Wed</div><div class="cal-dow">Thu</div><div class="cal-dow">Fri</div>
+      <div class="cal-dow">Sat</div>
+    </div>
+    <div class="cal-days-grid" id="cal-days"></div>
+  </div>
+
+  <!-- HORIZONTAL 5-DAY AGENDA STRIP -->
+  <div class="agenda-strip" id="agenda-strip">
+    <!-- Populated by JS -->
+  </div>
+
+  <!-- SPORTS -->
+  <div class="sports-section">
+    <div class="sports-header">
+      <div class="sports-title">SCORES</div>
+      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+    <div class="scores-ticker" id="scores-ticker"></div>
+  </div>
+
+  <!-- QUOTE OF THE DAY -->
+  <div class="quote-section" id="quote-section">
+    <div class="quote-mark">"</div>
+    <div class="quote-body">
+      <div class="quote-text" id="quote-text">Loading...</div>
+      <div class="quote-author" id="quote-author">—</div>
+    </div>
+  </div>
+
+    <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-item"><div class="status-dot"></div> Google Calendar Synced</div>
+    <div class="nd-mark">☘ GO IRISH</div>
+    <div class="status-item" id="last-updated">Updated just now</div>
+  </div>
+
+</div>
+<script>
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('hhmm').textContent = `${h}:${m}`;
+  document.getElementById('ss').textContent   = `:${s}`;
+  const DAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  document.getElementById('dayname').textContent = DAYS[now.getDay()];
+  document.getElementById('datefull').textContent = now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── SAMPLE EVENTS (replace with Google Calendar API) ──
+const calEvents = [
+  { date:'2026-06-07', title:'Family Dinner',           time:'6:00 PM', color:'#ff3366' },
+  { date:'2026-06-07', title:'ND Baseball Watch Party', time:'8:00 PM', color:'#C99700' },
+  { date:'2026-06-09', title:'Soccer Practice',         time:'4:30 PM', color:'#00e5ff' },
+  { date:'2026-06-10', title:'Doctor Appt.',            time:'9:30 AM', color:'#7c3aed' },
+  { date:'2026-06-10', title:'Grocery Run',             time:'5:00 PM', color:'#ff3366' },
+  { date:'2026-06-12', title:'ND Super Regional',       time:'2:00 PM', color:'#C99700' },
+  { date:'2026-06-14', title:'School Play',             time:'7:00 PM', color:'#ff3366' },
+  { date:'2026-06-18', title:'Book Club',               time:'7:30 PM', color:'#00e5ff' },
+  { date:'2026-06-21', title:'Date Night',              time:'7:00 PM', color:'#ffea00' },
+  { date:'2026-06-24', title:'Dentist',                 time:'11:00 AM',color:'#7c3aed' },
+  { date:'2026-06-28', title:'ND Football Scrimmage',   time:'10:00 AM',color:'#C99700' },
+];
+
+const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const DAYS_SHORT   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+// ── CALENDAR GRID ──
+function buildCalendar() {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const today = now.getDate();
+
+  document.getElementById('cal-heading').innerHTML =
+    `${MONTHS_LONG[month].toUpperCase()} <em>${year}</em>`;
+
+  const startOfYear = new Date(year, 0, 1);
+  const weekNum = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+  document.getElementById('cal-week-badge').textContent = `WEEK ${weekNum}`;
+
+  // Highlight today's day-of-week column header
+  const dowHeaders = document.querySelectorAll('.cal-dow');
+  dowHeaders.forEach((el, i) => { if (i === now.getDay()) el.classList.add('today-col'); });
+
+  const firstDay   = new Date(year, month, 1).getDay();
+  const daysInMo   = new Date(year, month+1, 0).getDate();
+  const prevDays   = new Date(year, month, 0).getDate();
+
+  // Build a map: dateString -> events[]
+  const eventMap = {};
+  calEvents.forEach(ev => {
+    if (!eventMap[ev.date]) eventMap[ev.date] = [];
+    eventMap[ev.date].push(ev);
+  });
+
+  const grid = document.getElementById('cal-days');
+  grid.innerHTML = '';
+
+  const addCell = (num, cls, ds) => {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day ' + cls;
+    let inner = `<span class="day-num">${num}</span>`;
+    if (ds && eventMap[ds]) {
+      const evs = eventMap[ds];
+      const show = evs.slice(0, 2);
+      show.forEach(ev => {
+        inner += `<div class="cal-event-pill" style="background:${ev.color}88;border-left:3px solid ${ev.color}"><span class="cal-event-time">${ev.time}</span>${ev.title}</div>`;
+      });
+      if (evs.length > 2) {
+        inner += `<div class="cal-more">+${evs.length - 2} more</div>`;
+      }
+    }
+    cell.innerHTML = inner;
+    grid.appendChild(cell);
+  };
+
+  // Previous month fill
+  for (let i = firstDay - 1; i >= 0; i--) {
+    addCell(prevDays - i, 'other-month', null);
+  }
+  for (let d = 1; d <= daysInMo; d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(year, month, d).getDay();
+    const isTodayCol = dow === now.getDay();
+    const cls = (d === today ? 'today' : (isTodayCol ? 'today-col-bg' : ''));
+    addCell(d, cls, ds);
+  }
+  const total = firstDay + daysInMo;
+  const rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= rem; d++) addCell(d, 'other-month', null);
+}
+buildCalendar();
+
+// ── HORIZONTAL 5-DAY AGENDA STRIP ──
+function buildAgenda() {
+  const now   = new Date();
+  const strip = document.getElementById('agenda-strip');
+  strip.innerHTML = '';
+
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const isToday = i === 0;
+
+    const dayEvents = calEvents.filter(e => e.date === ds);
+
+    const col = document.createElement('div');
+    col.className = 'agenda-day-col';
+
+    let evHTML = dayEvents.length
+      ? dayEvents.slice(0, 3).map(ev => `
+          <div class="agenda-event-chip">
+            <div class="chip-bar" style="background:${ev.color}"></div>
+            <div class="chip-body">
+              <div class="chip-time">${ev.time}</div>
+              <div class="chip-title">${ev.title}</div>
+            </div>
+          </div>`).join('')
+      : `<div class="no-events">No events</div>`;
+
+    const badgeHTML = dayEvents.length > 0
+      ? `<div class="agenda-count-badge">${dayEvents.length}</div>` : '';
+    col.innerHTML = `
+      <div class="agenda-day-header${isToday ? ' is-today' : ''}">
+        <div class="agenda-dow">${DAYS_SHORT[d.getDay()]}</div>
+        <div class="agenda-daynum">${d.getDate()}</div>
+        <div class="today-pill">TODAY</div>
+        ${badgeHTML}
+      </div>
+      <div class="agenda-events">${evHTML}</div>`;
+
+    strip.appendChild(col);
+  }
+}
+buildAgenda();
+
+// ── SCORES TICKER ──
+// Replace with live API data. Set playingToday:true on game day for ND/Cowboys.
+const ndGame    = { playingToday: true,  league:'NCAAB', t1:'Notre Dame', t1short:'ND',  t2:'Vanderbilt', s1:8, s2:3, win:1, status:'FINAL', featured:'nd' };
+const dfwGame   = { playingToday: false, league:'NFL',   t1:'Cowboys',    t1short:'DAL', t2:'Rams',       s1:0, s2:0, win:0, status:'8:20 PM', featured:'dfw' };
+
+const otherScores = [
+  { league:'MLB', t1:'Cubs',    s1:4, t2:'Cardinals', s2:7, win:2, status:'FINAL' },
+  { league:'MLB', t1:'Brewers', s1:6, t2:'Reds',      s2:2, win:1, status:'7TH ▸', live:true },
+  { league:'NBA', t1:'Pacers',  s1:108, t2:'Celtics', s2:101, win:1, status:'FINAL' },
+];
+
+const ticker = document.getElementById('scores-ticker');
+const allRows = [];
+
+// Add ND if playing today
+if (ndGame.playingToday) allRows.push(ndGame);
+// Add Cowboys if playing today
+if (dfwGame.playingToday) allRows.push(dfwGame);
+// Fill remaining slots (max 3 total) with other scores
+const slots = 3 - allRows.length;
+otherScores.slice(0, slots).forEach(g => allRows.push(g));
+
+allRows.forEach(g => {
+  const isLive    = !!g.live;
+  const isFeatND  = g.featured === 'nd';
+  const isFeatDFW = g.featured === 'dfw';
+  const leagueCls = isFeatND ? 'nd-league' : isFeatDFW ? 'dfw-league' : '';
+  const rowCls    = isFeatND ? 'score-row featured-row nd-row' : isFeatDFW ? 'score-row featured-row dfw-row' : 'score-row';
+  const stCls     = isLive ? 'st-live' : (g.status === 'FINAL' ? 'st-final' : 'st-sched');
+
+  // Scheduled game (no score yet)
+  if (!isFeatND && !isFeatDFW || g.win !== 0) {
+    ticker.innerHTML += `
+      <div class="${rowCls}">
+        <div class="score-league ${leagueCls}">${g.league}</div>
+        <div class="score-teams">
+          <div class="score-line ${g.win===1?'s-win':'s-lose'}">
+            <span class="s-name">${g.t1}</span>
+            <span class="s-pts ${g.win===1?'s-pts-w':'s-pts-l'}">${g.s1}</span>
+          </div>
+          <div class="score-line ${g.win===2?'s-win':'s-lose'}">
+            <span class="s-name">${g.t2}</span>
+            <span class="s-pts ${g.win===2?'s-pts-w':'s-pts-l'}">${g.s2}</span>
+          </div>
+        </div>
+        <div class="score-status ${stCls}">${g.status}</div>
+      </div>`;
+  } else {
+    // Scheduled upcoming game
+    ticker.innerHTML += `
+      <div class="${rowCls}">
+        <div class="score-league ${leagueCls}">${g.league}</div>
+        <div class="score-teams">
+          <div class="score-line s-win"><span class="s-name">${g.t1}</span></div>
+          <div class="score-line s-win"><span class="s-name">vs ${g.t2}</span></div>
+        </div>
+        <div class="score-status st-sched">${g.status}</div>
+      </div>`;
+  }
+});
+
+// ── STATUS ──
+function updateStatus() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    `Updated ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+}
+setInterval(updateStatus, 60000);
+updateStatus();
+
+// ── QUOTE OF THE DAY ──
+const quotes = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+  { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien" },
+  { text: "The purpose of our lives is to be happy.", author: "Dalai Lama" },
+  { text: "Get busy living or get busy dying.", author: "Stephen King" },
+  { text: "You only live once, but if you do it right, once is enough.", author: "Mae West" },
+  { text: "Many of life's failures are people who did not realize how close they were to success when they gave up.", author: "Thomas Edison" },
+  { text: "You have brains in your head. You have feet in your shoes. You can steer yourself any direction you choose.", author: "Dr. Seuss" },
+  { text: "If life were predictable it would cease to be life and be without flavor.", author: "Eleanor Roosevelt" },
+  { text: "If you look at what you have in life, you'll always have more.", author: "Oprah Winfrey" },
+  { text: "If you want to live a happy life, tie it to a goal, not to people or things.", author: "Albert Einstein" },
+  { text: "Never let the fear of striking out keep you from playing the game.", author: "Babe Ruth" },
+  { text: "Money and success don't change people; they merely amplify what is already there.", author: "Will Smith" },
+  { text: "Your time is limited, so don't waste it living someone else's life.", author: "Steve Jobs" },
+  { text: "Not how long, but how well you have lived is the main thing.", author: "Seneca" },
+  { text: "If life is not smiling at you, give it a good tickling.", author: "Unknown" },
+  { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },
+  { text: "In this life we cannot do great things. We can only do small things with great love.", author: "Mother Teresa" },
+  { text: "Only a life lived for others is a life worthwhile.", author: "Albert Einstein" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { text: "Great minds discuss ideas; average minds discuss events; small minds discuss people.", author: "Eleanor Roosevelt" },
+  { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle" },
+];
+
+function getDailyQuote() {
+  const now = new Date();
+  // Use day-of-year as seed so it changes daily but stays the same all day
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now - start;
+  const dayOfYear = Math.floor(diff / 86400000);
+  return quotes[dayOfYear % quotes.length];
+}
+
+const q = getDailyQuote();
+document.getElementById('quote-text').textContent = q.text;
+document.getElementById('quote-author').textContent = '— ' + q.author;
+</script>
+</body>
+</html>
