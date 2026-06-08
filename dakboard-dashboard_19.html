@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080, initial-scale=1.0, shrink-to-fit=no">
+<title>Dakboard Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/ical.js/build/ical.min.js">
+// ── LIVE WEATHER (Open-Meteo, no API key needed) ──
+const WX_LAT = 41.7052;
+const WX_LON = -86.2354;
+
+const WMO_ICONS = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'❄️', 73:'❄️', 75:'❄️',
+  77:'❄️', 80:'🌦️', 81:'🌧️', 82:'⛈️',
+  85:'❄️', 86:'❄️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️'
+};
+
+const WMO_DESC = {
+  0:'Clear Sky', 1:'Mostly Clear', 2:'Partly Cloudy', 3:'Overcast',
+  45:'Foggy', 48:'Foggy',
+  51:'Light Drizzle', 53:'Drizzle', 55:'Heavy Drizzle',
+  61:'Light Rain', 63:'Rain', 65:'Heavy Rain',
+  71:'Light Snow', 73:'Snow', 75:'Heavy Snow',
+  77:'Snow Grains', 80:'Light Showers', 81:'Showers', 82:'Heavy Showers',
+  85:'Snow Showers', 86:'Heavy Snow Showers',
+  95:'Thunderstorm', 96:'Thunderstorm w/ Hail', 99:'Thunderstorm w/ Hail'
+};
+
+function celsiusToF(c) { return Math.round(c * 9/5 + 32); }
+
+async function loadWeather() {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}` +
+      `&current=temperature_2m,weathercode,windspeed_10m,relative_humidity_2m` +
+      `&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max` +
+      `&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=6&timezone=America%2FChicago`;
+
+    const data = await fetch(url).then(r => r.json());
+    const cur  = data.current;
+    const day  = data.daily;
+
+    // Current conditions
+    const temp  = Math.round(cur.temperature_2m);
+    const code  = cur.weathercode;
+    const wind  = Math.round(cur.windspeed_10m);
+    const humid = cur.relative_humidity_2m;
+    const hiToday = Math.round(day.temperature_2m_max[0]);
+    const rainToday = day.precipitation_probability_max[0];
+
+    document.querySelector('.wx-temp span').textContent = temp;
+    document.querySelector('.wx-desc').textContent = WMO_DESC[code] || 'Unknown';
+    document.querySelector('.wx-icon').textContent = WMO_ICONS[code] || '🌡️';
+
+    // Stats
+    const statVals = document.querySelectorAll('.wx-stat-val');
+    if (statVals[0]) statVals[0].textContent = hiToday + '°';
+    if (statVals[1]) statVals[1].textContent = rainToday + '%';
+    if (statVals[2]) statVals[2].textContent = wind + 'mph';
+    if (statVals[3]) statVals[3].textContent = humid + '%';
+
+    // 5-day forecast (skip today = index 0, take next 5)
+    const fcDays = document.querySelectorAll('.wx-fc-day');
+    const DAYS_FC = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    fcDays.forEach((col, i) => {
+      const idx = i; // today is index 0
+      if (!day.temperature_2m_max[idx]) return;
+      const fcDate = new Date(day.time[idx] + 'T12:00:00');
+      const label  = i === 0 ? 'Today' : DAYS_FC[fcDate.getDay()];
+      const fcCode = day.weathercode[idx];
+      const fcHi   = Math.round(day.temperature_2m_max[idx]);
+      const fcRain = day.precipitation_probability_max[idx];
+
+      col.querySelector('.wx-fc-label').textContent  = label;
+      col.querySelector('.wx-fc-icon').textContent   = WMO_ICONS[fcCode] || '🌡️';
+      col.querySelector('.wx-fc-hi').textContent     = fcHi + '°';
+      col.querySelector('.wx-fc-precip').textContent = '💧 ' + fcRain + '%';
+    });
+
+  } catch(err) {
+    console.error('Weather load failed:', err);
+  }
+}
+
+loadWeather();
+setInterval(loadWeather, 15 * 60 * 1000); // refresh every 15 min
+</script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  html, body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  :root {
+    --bg:             #080810;
+    --surface:        #10101c;
+    --surface2:       #181828;
+    --border:         #232338;
+    --nd-gold:        #C99700;
+    --nd-gold-dim:    #7a5b00;
+    --nd-navy:        #0C2340;
+    --cowboys-blue:   #003594;
+    --cowboys-silver: #869397;
+    --green:          #00e676;
+    --red:            #ff1744;
+    --cyan:           #00e5ff;
+    --cream:          #f5f0e8;
+    --yellow:         #ffea00;
+    --text:           #eeeeff;
+    --muted:          #6666aa;
+    --font-d: 'Bebas Neue', sans-serif;
+    --font-b: 'DM Sans', sans-serif;
+    --font-m: 'Space Mono', monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; max-width:100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-b);
+    width: 100vw;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background:
+      radial-gradient(ellipse 700px 600px at 5% 0%,   rgba(12,35,64,0.5)   0%, transparent 70%),
+      radial-gradient(ellipse 500px 500px at 95% 40%,  rgba(201,151,0,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 20% 100%, rgba(0,53,148,0.18)  0%, transparent 70%);
+    pointer-events:none; z-index:0;
+  }
+
+  .dashboard {
+    position:relative; z-index:1;
+    display:flex; flex-direction:column;
+    width: 100vw;
+    min-height: 100vh;
+  }
+
+  /* ══════════════════════════
+     TOP STRIP — time + weather
+  ══════════════════════════ */
+  .top-strip {
+    display:flex; align-items:stretch;
+    border-bottom: 2px solid var(--border);
+    animation: fadeUp .4s ease both;
+  }
+  .time-pill {
+    background: linear-gradient(135deg,#0C2340 0%,#162e52 100%);
+    padding: 16px 28px;
+    display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:6px;
+    flex-shrink:0;
+    border-right: 3px solid var(--nd-gold);
+  }
+  .clock-num {
+    font-family: var(--font-d);
+    font-size: 100px;
+    line-height:1;
+    color:#fff;
+    letter-spacing:1px;
+  }
+  .clock-secs {
+    font-family: var(--font-m);
+    font-size: 20px;
+    color: var(--nd-gold);
+  }
+  .clock-ampm {
+    font-family: var(--font-d);
+    font-size: 32px;
+    color: var(--nd-gold);
+    margin-left: 6px;
+    letter-spacing: 2px;
+    vertical-align: top;
+    margin-top: 12px;
+    display: inline-block;
+  }
+  .date-col { display:flex; flex-direction:row; align-items:baseline; gap:12px; }
+  .date-dayname {
+    font-family: var(--font-d);
+    font-size: 34px; letter-spacing:3px;
+    color: var(--nd-gold); line-height:1;
+  }
+  .date-full {
+    font-size:18px; color:rgba(255,255,255,0.45);
+    letter-spacing:1.5px; text-transform:uppercase;
+  }
+
+  .weather-strip {
+    flex:1; background:var(--surface);
+    padding:10px 28px;
+    display:flex; flex-direction:row; align-items:center; justify-content:space-between;
+    gap:20px;
+  }
+  .wx-top { display:contents; }
+  .wx-left { display:flex; align-items:center; gap:12px; }
+  .wx-icon { font-size:34px; filter:drop-shadow(0 0 10px rgba(245,240,232,0.3)); }
+  .wx-temp {
+    font-family:var(--font-d); font-size:56px; line-height:1; color:var(--cream);
+  }
+  .wx-temp sup { font-size:22px; vertical-align:top; margin-top:6px; display:inline-block; }
+  .wx-desc { font-size:15px; color:var(--text); margin-top:1px; }
+  .wx-loc  { font-size:10px; color:var(--muted); letter-spacing:1px; margin-top:1px; }
+  .wx-stats { display:flex; gap:16px; align-items:center; }
+  .wx-stat { text-align:center; }
+  .wx-stat-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+  .wx-stat-val { font-family:var(--font-m); font-size:16px; color:var(--cream); margin-top:1px; }
+
+  /* 5-day forecast row */
+  .wx-forecast {
+    display:flex; gap:0;
+    border-left:1px solid var(--border);
+    padding-left:16px;
+    flex-shrink:0;
+  }
+  .wx-fc-day {
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    padding: 0 10px;
+    border-right:1px solid var(--border);
+  }
+  .wx-fc-day:last-child { border-right:none; }
+  .wx-fc-day.today-fc .wx-fc-label { color:var(--nd-gold); font-weight:700; }
+  .wx-fc-label { font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+  .wx-fc-icon  { font-size:18px; line-height:1; }
+  .wx-fc-hi    { font-family:var(--font-m); font-size:13px; color:var(--cream); }
+  .wx-fc-lo    { display:none; }
+  .wx-fc-precip { font-size:9px; color:var(--cream); opacity:0.7; letter-spacing:1px; }
+
+  /* ══════════════════════════
+     CALENDAR — full-width hero
+  ══════════════════════════ */
+  .cal-section {
+    background: var(--surface);
+    padding: 20px 24px 16px;
+    border-bottom: 3px solid var(--nd-gold);
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-sizing: border-box;
+    width: 100%;
+    animation: fadeUp .4s ease .08s both;
+  }
+
+  .cal-header {
+    display:flex; align-items:flex-end; justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .cal-month-big {
+    font-family:var(--font-d);
+    font-size:80px; letter-spacing:4px; line-height:1;
+  }
+  .cal-month-big em { color:var(--nd-gold); font-style:normal; }
+  .cal-week-badge {
+    font-family:var(--font-m); font-size:18px; color:var(--muted);
+    border:1px solid var(--border); padding:6px 14px; border-radius:4px;
+    margin-bottom:8px;
+  }
+
+  /* Day-of-week headers */
+  .cal-dow-row {
+    display:grid; grid-template-columns:repeat(7,1fr);
+    margin-bottom:4px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .cal-dow {
+    text-align:center; font-size:14px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--muted);
+    padding:5px 0; font-weight:500;
+  }
+  .cal-dow:first-child,.cal-dow:last-child { color:var(--nd-gold); opacity:.65; }
+  .cal-dow.today-col { color:var(--nd-gold) !important; opacity:1 !important; }
+  .cal-day.today-col-bg { background: rgba(201,151,0,0.06); }
+
+  /* Date cells — bigger since calendar is hero */
+  .cal-days-grid {
+    display:grid; grid-template-columns:repeat(7,1fr);
+    grid-auto-rows: 105px;
+    gap:4px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .cal-day {
+    min-height: 0;
+    display:flex; flex-direction:column;
+    align-items:flex-start; justify-content:flex-start;
+    padding: 6px 6px 4px;
+    overflow: hidden;
+    box-sizing: border-box;
+    font-family:var(--font-m); font-size:15px;
+    border-radius:8px; position:relative; cursor:default;
+    background: var(--surface2);
+    transition: background .15s;
+  }
+  .cal-day.other-month { color:#2a2a44; background:transparent; }
+  .cal-day.today {
+    background: rgba(201,151,0,0.14);
+    border: 1px solid var(--nd-gold);
+  }
+  .day-num {
+    font-size:20px; line-height:1;
+    margin-bottom:4px;
+    width:100%; text-align:right;
+  }
+  .cal-day.today .day-num { color:var(--nd-gold); font-weight:700; }
+  .cal-event-pill {
+    width:100%;
+    font-family: var(--font-b);
+    font-size:13px; font-weight:600;
+    line-height:1.3;
+    padding:3px 6px;
+    border-radius:3px;
+    margin-bottom:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    color:#fff;
+  }
+  .cal-event-time {
+    font-size:11px; opacity:0.75; font-weight:400;
+    display:block; margin-bottom:1px; letter-spacing:0.5px;
+  }
+  .cal-more { font-size:9px; color:var(--muted); padding:1px 3px; }
+
+  /* ══════════════════════════════════════
+     HORIZONTAL 5-DAY AGENDA STRIP
+  ══════════════════════════════════════ */
+  .agenda-strip {
+    background: var(--surface2);
+    border-bottom: 2px solid var(--border);
+    padding: 0;
+    display:flex;
+    animation: fadeUp .4s ease .15s both;
+    overflow: hidden;
+  }
+
+  .agenda-day-col {
+    flex: 1;
+    border-right: 1px solid var(--border);
+    display:flex; flex-direction:column;
+    min-height: 180px;
+  }
+  .agenda-day-col:last-child { border-right:none; }
+
+  .agenda-day-header {
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border);
+    position:relative;
+  }
+  .agenda-count-badge {
+    position:absolute; top:10px; right:10px;
+    background: var(--nd-gold); color:#000;
+    font-size:10px; font-weight:700;
+    width:20px; height:20px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-m);
+    z-index:2;
+  }
+  .agenda-day-header.is-today {
+    background: linear-gradient(135deg, rgba(201,151,0,0.18) 0%, transparent 80%);
+    border-bottom-color: var(--nd-gold);
+  }
+  .agenda-dow {
+    font-family: var(--font-d);
+    font-size: 20px;
+    letter-spacing: 3px;
+    color: var(--muted);
+    line-height: 1;
+  }
+  .agenda-day-header.is-today .agenda-dow { color: var(--nd-gold); }
+  .agenda-daynum {
+    font-family: var(--font-d);
+    font-size: 40px;
+    line-height: 1;
+    color: var(--text);
+    margin-top: 2px;
+  }
+  .agenda-day-header.is-today .agenda-daynum { color: var(--nd-gold); }
+
+  .agenda-events {
+    flex:1;
+    padding: 6px 12px 10px;
+    display:flex; flex-direction:column; gap:8px;
+    overflow:hidden;
+  }
+  .agenda-event-chip {
+    display:flex; gap:8px; align-items:flex-start;
+  }
+  .chip-bar {
+    width:3px; border-radius:2px;
+    flex-shrink:0; align-self:stretch;
+    min-height:28px;
+  }
+  .chip-body {}
+  .chip-time {
+    font-family: var(--font-m);
+    font-size:13px; color:var(--muted);
+    margin-bottom:2px;
+  }
+  .chip-title {
+    font-size:16px; font-weight:500;
+    line-height:1.3; color:var(--text);
+  }
+  .no-events {
+    font-size:13px; color:var(--border);
+    font-style:italic; padding-top:4px;
+  }
+
+  /* ══════════════════════════
+     SPORTS
+  ══════════════════════════ */
+  .sports-section {
+    padding: 10px 24px;
+    border-bottom: 2px solid var(--border);
+    animation: fadeUp .4s ease .22s both;
+  }
+  .sports-header {
+    display:flex; align-items:center; gap:10px;
+    margin-bottom:8px;
+  }
+  .sports-title { font-family:var(--font-d); font-size:16px; letter-spacing:5px; }
+  .live-badge {
+    font-size:10px; letter-spacing:2px; font-weight:700; text-transform:uppercase;
+    padding:3px 9px; border-radius:20px;
+    background:rgba(255,23,68,0.12); color:var(--red);
+    border:1px solid rgba(255,23,68,0.35);
+  }
+  .live-dot {
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background:var(--red); margin-right:5px;
+    animation:blink 1s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+
+  /* unified scores ticker — ND/Cowboys inline when playing */
+  .scores-ticker {
+    border:1px solid var(--border); border-radius:8px;
+    display:flex; flex-direction:row;
+    overflow-x:auto; overflow-y:hidden;
+    scroll-behavior:smooth;
+    scrollbar-width:none;
+    max-width:100%;
+  }
+  .scores-ticker::-webkit-scrollbar { display:none; }
+  .score-row {
+    display:flex; flex-direction:column; justify-content:center;
+    padding:8px 16px; gap:4px;
+    border-right:1px solid var(--border);
+    flex-shrink:0;
+    min-width:160px;
+  }
+  .score-row:last-child { border-right:none; }
+  .score-row.featured-row { background: rgba(255,255,255,0.03); border-top: 3px solid transparent; }
+  .score-row.nd-row  { border-top-color: var(--nd-gold); }
+  .score-row.dfw-row { border-top-color: var(--cowboys-silver); }
+  .score-league {
+    font-size:9px; letter-spacing:2px; text-transform:uppercase;
+    color:var(--muted); width:auto; margin-bottom:2px;
+  }
+  .score-league.nd-league  { color:var(--nd-gold); }
+  .score-league.dfw-league { color:var(--cowboys-silver); }
+  .score-teams { flex:1; display:flex; flex-direction:column; gap:3px; }
+  .score-line  { display:flex; align-items:center; justify-content:space-between; }
+  .s-name { font-size:15px; font-weight:500; }
+  .s-pts  { font-family:var(--font-m); font-size:15px; font-weight:700; }
+  .s-win  .s-name { color:var(--text); }
+  .s-lose .s-name { color:var(--muted); }
+  .s-pts-w { color:var(--green); }
+  .s-pts-l { color:var(--muted); }
+  .score-status { font-size:10px; text-transform:uppercase; letter-spacing:1px; text-align:left; width:auto; margin-top:2px; }
+  .st-live  { color:var(--red); font-weight:700; }
+  .st-final { color:var(--muted); }
+  .st-sched { color:var(--cyan); }
+  .score-note { font-size:10px; color:var(--muted); font-style:italic; flex-shrink:0; max-width:140px; text-align:right; line-height:1.3; }
+
+
+  /* ══════════════════════════
+     QUOTE OF THE DAY
+  ══════════════════════════ */
+  .quote-section {
+    padding: 14px 32px;
+    background: var(--nd-navy);
+    border-top: 1px solid rgba(201,151,0,0.2);
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .quote-mark {
+    font-family: var(--font-d);
+    font-size: 52px;
+    line-height: 0.8;
+    color: var(--nd-gold);
+    opacity: 0.35;
+    flex-shrink: 0;
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+  .quote-body {}
+  .quote-text {
+    font-size: 17px;
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.4;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.2px;
+  }
+  .quote-author {
+    margin-top: 6px;
+    font-family: var(--font-m);
+    font-size: 11px;
+    color: var(--nd-gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* ══════════════════════════
+     STATUS BAR
+  ══════════════════════════ */
+  .status-bar {
+    margin-top:auto;
+    background:var(--nd-navy);
+    border-top:3px solid var(--nd-gold);
+    padding:10px 24px;
+    display:flex; justify-content:space-between; align-items:center;
+    animation: fadeUp .4s ease .36s both;
+  }
+  .status-item {
+    display:flex; align-items:center; gap:8px;
+    font-size:14px; color:rgba(255,255,255,0.65);
+  }
+  .status-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--green); box-shadow:0 0 8px var(--green);
+    animation:blink 3s ease-in-out infinite;
+  }
+  .nd-mark { font-family:var(--font-d); font-size:18px; letter-spacing:2px; color:var(--nd-gold); }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform:translateY(14px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- TOP STRIP -->
+  <div class="top-strip">
+    <div class="time-pill">
+      <div class="clock-num"><span id="hhmm">00:00</span><span class="clock-secs" id="ss">:00</span><span class="clock-ampm" id="ampm">AM</span></div>
+      <div class="date-col">
+        <div class="date-dayname" id="dayname">SUNDAY</div>
+        <div class="date-full"    id="datefull">June 7, 2026</div>
+      </div>
+    </div>
+    <div class="weather-strip">
+      <div class="wx-top">
+        <div class="wx-left">
+          <div class="wx-icon">⛅</div>
+          <div>
+            <div class="wx-temp"><span>74</span><sup>°F</sup></div>
+            <div class="wx-desc">Partly Cloudy</div>
+            <div class="wx-loc">📍 Notre Dame, IN</div>
+          </div>
+        </div>
+        <div class="wx-stats">
+          <div class="wx-stat"><div class="wx-stat-label">High</div><div class="wx-stat-val" id="wx-hi">--°</div></div>
+          <div class="wx-stat"><div class="wx-stat-label">Rain</div><div class="wx-stat-val" id="wx-rain">--%</div></div>
+          <div class="wx-stat"><div class="wx-stat-label">Wind</div><div class="wx-stat-val" id="wx-wind">--mph</div></div>
+          <div class="wx-stat"><div class="wx-stat-label">Humid</div><div class="wx-stat-val" id="wx-humid">--%</div></div>
+        </div>
+      </div>
+      <div class="wx-forecast">
+        <div class="wx-fc-day today-fc">
+          <div class="wx-fc-label">Today</div>
+          <div class="wx-fc-icon">⛅</div>
+          <div class="wx-fc-hi">79°</div>
+          <div class="wx-fc-lo">61°</div>
+          <div class="wx-fc-precip">💧 20%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Mon</div>
+          <div class="wx-fc-icon">🌧️</div>
+          <div class="wx-fc-hi">72°</div>
+          <div class="wx-fc-lo">57°</div>
+          <div class="wx-fc-precip">💧 70%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Tue</div>
+          <div class="wx-fc-icon">🌦️</div>
+          <div class="wx-fc-hi">68°</div>
+          <div class="wx-fc-lo">54°</div>
+          <div class="wx-fc-precip">💧 40%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Wed</div>
+          <div class="wx-fc-icon">☀️</div>
+          <div class="wx-fc-hi">76°</div>
+          <div class="wx-fc-lo">58°</div>
+          <div class="wx-fc-precip">💧 5%</div>
+        </div>
+        <div class="wx-fc-day">
+          <div class="wx-fc-label">Thu</div>
+          <div class="wx-fc-icon">🌤️</div>
+          <div class="wx-fc-hi">81°</div>
+          <div class="wx-fc-lo">63°</div>
+          <div class="wx-fc-precip">💧 10%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR HERO -->
+  <div class="cal-section">
+    <div class="cal-header">
+      <div class="cal-month-big" id="cal-heading">JUNE <em>2026</em></div>
+      <div class="cal-week-badge" id="cal-week-badge">WEEK 23</div>
+    </div>
+    <div class="cal-dow-row">
+      <div class="cal-dow">Sun</div><div class="cal-dow">Mon</div><div class="cal-dow">Tue</div>
+      <div class="cal-dow">Wed</div><div class="cal-dow">Thu</div><div class="cal-dow">Fri</div>
+      <div class="cal-dow">Sat</div>
+    </div>
+    <div class="cal-days-grid" id="cal-days"></div>
+  </div>
+
+  <!-- HORIZONTAL 5-DAY AGENDA STRIP -->
+  <div class="agenda-strip" id="agenda-strip">
+    <!-- Populated by JS -->
+  </div>
+
+  <!-- SPORTS -->
+  <div class="sports-section">
+    <div class="sports-header">
+      <div class="sports-title">SCORES</div>
+      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+    <div class="scores-ticker" id="scores-ticker"></div>
+  </div>
+
+  <!-- QUOTE OF THE DAY -->
+  <div class="quote-section" id="quote-section">
+    <div class="quote-mark">"</div>
+    <div class="quote-body">
+      <div class="quote-text" id="quote-text">Loading...</div>
+      <div class="quote-author" id="quote-author">—</div>
+    </div>
+  </div>
+
+    <!-- STATUS BAR -->
+  <div class="status-bar">
+    <div class="status-item"><div class="status-dot"></div> Google Calendar Synced</div>
+    <div class="nd-mark">☘ GO IRISH</div>
+    <div class="status-item" id="last-updated">Updated just now</div>
+  </div>
+
+</div>
+<script>
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  const hStr = String(h).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('hhmm').textContent = `${hStr}:${m}`;
+  document.getElementById('ss').textContent   = `:${s}`;
+  document.getElementById('ampm').textContent = ampm;
+  const DAYS = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+  document.getElementById('dayname').textContent = DAYS[now.getDay()];
+  document.getElementById('datefull').textContent = now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── SAMPLE EVENTS (replace with Google Calendar API) ──
+const ICAL_URLS = [
+  'https://calendar.google.com/calendar/ical/d80f4844ae8c2f869f660d6e6078b0f184451702d45fbbd2f3a66692f80c1f50%40group.calendar.google.com/private-7022698de91dfb34b8f41e91958c036a/basic.ics',
+  'https://calendar.google.com/calendar/ical/jramaeker%40gmail.com/private-ed1cf5264075361bc34ca0206faf1750/basic.ics',
+  'https://calendar.google.com/calendar/ical/a53339bf3b5e37f4057d8f4a42b90ef80e5cad84eae80fabc97eaffc0589ad02%40group.calendar.google.com/private-c14d773eaca26a4cc83d53db421a1411/basic.ics',
+  'https://calendar.google.com/calendar/ical/220e3efc2bf8ebcc0aa3969aa5d6917b7ddddabde6c1e5b01557dc9cf45253b7%40group.calendar.google.com/private-a88e92d6b25959e79272f2be95773e17/basic.ics',
+  'https://calendar.google.com/calendar/ical/c9a812107a0db75640adc93b84b0529027d096a869e96f14a4bdfeee9558c6f5%40group.calendar.google.com/private-0c232096752fadad189dcc091d66eb0f/basic.ics',
+  'https://calendar.google.com/calendar/ical/family11371226280449696764%40group.calendar.google.com/private-b43b14ddf86a7bd4db612128fbd3fa75/basic.ics',
+];
+
+const calEvents = [];
+
+async function fetchOneCalendar(url) {
+  try {
+    const proxy = 'https://api.allorigins.win/raw?url=';
+    const res = await fetch(proxy + encodeURIComponent(url));
+    const text = await res.text();
+    const jcal = ICAL.parse(text);
+    const comp = new ICAL.Component(jcal);
+    const vevents = comp.getAllSubcomponents('vevent');
+    const colors = ['#ff3366','#C99700','#7c3aed','#00e5ff','#ffea00','#00e676'];
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const cutoff = new Date(today);
+    cutoff.setDate(cutoff.getDate() + 60);
+
+    vevents.forEach(ev => {
+      const event = new ICAL.Event(ev);
+      const start = event.startDate.toJSDate();
+      const end   = event.endDate ? event.endDate.toJSDate() : start;
+      const color = colors[Math.abs((event.summary || '').charCodeAt(0)) % colors.length];
+
+      if (end < today) return;
+      if (start > cutoff) return;
+
+      const isAllDay = event.startDate.isDate;
+      if (isAllDay && end > start) {
+        const current = new Date(start);
+        while (current < end) {
+          if (current >= today) {
+            calEvents.push({
+              date:  current.toISOString().slice(0,10),
+              title: event.summary || '(No title)',
+              time:  'All Day',
+              color
+            });
+          }
+          current.setDate(current.getDate() + 1);
+        }
+      } else {
+        calEvents.push({
+          date:  start.toISOString().slice(0,10),
+          title: event.summary || '(No title)',
+          time:  isAllDay ? 'All Day' : start.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}),
+          color
+        });
+      }
+    });
+  } catch(err) {
+    console.error('Failed to load calendar:', url, err);
+  }
+}
+
+async function loadCalendar() {
+  await Promise.all(ICAL_URLS.map(url => fetchOneCalendar(url)));
+  calEvents.sort((a,b) => a.date.localeCompare(b.date));
+}
+
+const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const DAYS_SHORT   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+// ── CALENDAR GRID ──
+function buildCalendar() {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const today = now.getDate();
+
+  document.getElementById('cal-heading').innerHTML =
+    `${MONTHS_LONG[month].toUpperCase()} <em>${year}</em>`;
+
+  const startOfYear = new Date(year, 0, 1);
+  const weekNum = Math.ceil(((now - startOfYear) / 86400000 + startOfYear.getDay() + 1) / 7);
+  document.getElementById('cal-week-badge').textContent = `WEEK ${weekNum}`;
+
+  // Highlight today's day-of-week column header
+  const dowHeaders = document.querySelectorAll('.cal-dow');
+  dowHeaders.forEach((el, i) => { if (i === now.getDay()) el.classList.add('today-col'); });
+
+  const firstDay   = new Date(year, month, 1).getDay();
+  const daysInMo   = new Date(year, month+1, 0).getDate();
+  const prevDays   = new Date(year, month, 0).getDate();
+
+  // Build a map: dateString -> events[]
+  const eventMap = {};
+  calEvents.forEach(ev => {
+    if (!eventMap[ev.date]) eventMap[ev.date] = [];
+    eventMap[ev.date].push(ev);
+  });
+
+  const grid = document.getElementById('cal-days');
+  grid.innerHTML = '';
+
+  const addCell = (num, cls, ds) => {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day ' + cls;
+    let inner = `<span class="day-num">${num}</span>`;
+    if (ds && eventMap[ds]) {
+      const evs = eventMap[ds];
+      const show = evs.slice(0, 2);
+      show.forEach(ev => {
+        inner += `<div class="cal-event-pill" style="background:${ev.color}88;border-left:3px solid ${ev.color}"><span class="cal-event-time">${ev.time}</span>${ev.title}</div>`;
+      });
+      if (evs.length > 2) {
+        inner += `<div class="cal-more">+${evs.length - 2} more</div>`;
+      }
+    }
+    cell.innerHTML = inner;
+    grid.appendChild(cell);
+  };
+
+  // Previous month fill
+  for (let i = firstDay - 1; i >= 0; i--) {
+    addCell(prevDays - i, 'other-month', null);
+  }
+  for (let d = 1; d <= daysInMo; d++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow = new Date(year, month, d).getDay();
+    const isTodayCol = dow === now.getDay();
+    const cls = (d === today ? 'today' : (isTodayCol ? 'today-col-bg' : ''));
+    addCell(d, cls, ds);
+  }
+  const total = firstDay + daysInMo;
+  const rem   = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= rem; d++) addCell(d, 'other-month', null);
+}
+loadCalendar().then(() => {
+  buildCalendar();
+  buildAgenda();
+});
+
+// ── HORIZONTAL 5-DAY AGENDA STRIP ──
+function buildAgenda() {
+  const now   = new Date();
+  const strip = document.getElementById('agenda-strip');
+  strip.innerHTML = '';
+
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(now);
+    d.setDate(now.getDate() + i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const isToday = i === 0;
+
+    const dayEvents = calEvents.filter(e => e.date === ds);
+
+    const col = document.createElement('div');
+    col.className = 'agenda-day-col';
+
+    let evHTML = dayEvents.length
+      ? dayEvents.slice(0, 3).map(ev => `
+          <div class="agenda-event-chip">
+            <div class="chip-bar" style="background:${ev.color}"></div>
+            <div class="chip-body">
+              <div class="chip-time">${ev.time}</div>
+              <div class="chip-title">${ev.title}</div>
+            </div>
+          </div>`).join('')
+      : `<div class="no-events">No events</div>`;
+
+    const badgeHTML = dayEvents.length > 0
+      ? `<div class="agenda-count-badge">${dayEvents.length}</div>` : '';
+    col.innerHTML = `
+      <div class="agenda-day-header${isToday ? ' is-today' : ''}">
+        <div class="agenda-dow">${DAYS_SHORT[d.getDay()]}</div>
+        <div class="agenda-daynum">${d.getDate()}</div>
+        ${badgeHTML}
+      </div>
+      <div class="agenda-events">${evHTML}</div>`;
+
+    strip.appendChild(col);
+  }
+}
+buildAgenda();
+
+// ── SCORES TICKER ──
+// Auto-scroll scores ticker
+function autoScrollScores() {
+  const ticker = document.getElementById('scores-ticker');
+  if (!ticker) return;
+  const maxScroll = ticker.scrollWidth - ticker.clientWidth;
+  if (maxScroll <= 0) return;
+  let pos = 0;
+  let dir = 1;
+  setInterval(() => {
+    pos += dir * 1.2;
+    if (pos >= maxScroll) { dir = -1; }
+    if (pos <= 0)         { dir =  1; }
+    ticker.scrollLeft = pos;
+  }, 30);
+}
+setTimeout(autoScrollScores, 2000);
+
+// ESPN API helper
+async function fetchESPN(sport, league) {
+  try {
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const url = `https://site.api.espn.com/apis/site/v2/sports/${sport}/${league}/scoreboard?dates=${today}`;
+    const data = await fetch(url).then(r => r.json());
+    return data.events || [];
+  } catch(e) { return []; }
+}
+
+// International soccer (World Cup, Euros, etc.)
+async function fetchSoccer() {
+  try {
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    // Try FIFA World Cup first, then UEFA competitions
+    const leagues = [
+      'soccer/fifa-world-cup',
+      'soccer/uefa-european-championship',
+      'soccer/concacaf-gold-cup',
+      'soccer/copa-america',
+    ];
+    for (const league of leagues) {
+      const url = `https://site.api.espn.com/apis/site/v2/sports/${league}/scoreboard?dates=${today}`;
+      const data = await fetch(url).then(r => r.json());
+      if (data.events && data.events.length > 0) return data.events.slice(0,3);
+    }
+    return [];
+  } catch(e) { return []; }
+}
+
+function parseGame(event, leagueLabel) {
+  try {
+    const comp = event.competitions[0];
+    const home = comp.competitors.find(c => c.homeAway === 'home') || comp.competitors[0];
+    const away = comp.competitors.find(c => c.homeAway === 'away') || comp.competitors[1];
+    const status = comp.status.type;
+    const homeScore = parseInt(home.score || 0);
+    const awayScore = parseInt(away.score || 0);
+    const isLive = status.state === 'in';
+    const isFinal = status.state === 'post';
+    const statusStr = isLive ? (comp.status.displayClock || 'LIVE') :
+                      isFinal ? 'FINAL' : (event.status?.type?.shortDetail || 'SCHED');
+    return {
+      league: leagueLabel,
+      t1: home.team.shortDisplayName || home.team.abbreviation,
+      t1abbr: home.team.abbreviation,
+      s1: homeScore,
+      t2: away.team.shortDisplayName || away.team.abbreviation,
+      t2abbr: away.team.abbreviation,
+      s2: awayScore,
+      win: isFinal ? (homeScore > awayScore ? 1 : 2) : 0,
+      status: statusStr,
+      live: isLive,
+      scheduled: status.state === 'pre'
+    };
+  } catch(e) { return null; }
+}
+
+function isND(game) {
+  return game && (game.t1abbr === 'ND' || game.t2abbr === 'ND' ||
+    game.t1.toLowerCase().includes('notre dame') ||
+    game.t2.toLowerCase().includes('notre dame'));
+}
+
+function isDallas(game) {
+  return game && (game.t1abbr === 'DAL' || game.t2abbr === 'DAL');
+}
+
+function renderScoreTicker(games) {
+  const ticker = document.getElementById('scores-ticker');
+  ticker.innerHTML = '';
+
+  if (games.length === 0) {
+    ticker.innerHTML = '<div class="score-row"><div class="score-league" style="width:auto;color:var(--muted);font-size:12px;padding:8px">No games today</div></div>';
+    return;
+  }
+
+  games.forEach(g => {
+    const isNDGame  = isND(g);
+    const isDFWGame = isDallas(g);
+    const rowCls = isNDGame  ? 'score-row featured-row nd-row' :
+                   isDFWGame ? 'score-row featured-row dfw-row' : 'score-row';
+    const leagueCls = isNDGame ? 'score-league nd-league' :
+                      isDFWGame ? 'score-league dfw-league' : 'score-league';
+
+    if (g.scheduled) {
+      ticker.innerHTML += `
+        <div class="${rowCls}">
+          <div class="${leagueCls}">${g.league}</div>
+          <div class="score-teams">
+            <div class="score-line s-win"><span class="s-name">${g.t1}</span></div>
+            <div class="score-line s-win"><span class="s-name">vs ${g.t2}</span></div>
+          </div>
+          <div class="score-status st-sched">${g.status}</div>
+        </div>`;
+    } else {
+      const stCls = g.live ? 'st-live' : 'st-final';
+      ticker.innerHTML += `
+        <div class="${rowCls}">
+          <div class="${leagueCls}">${g.league}</div>
+          <div class="score-teams">
+            <div class="score-line ${g.win===1?'s-win':'s-lose'}">
+              <span class="s-name">${g.t1}</span>
+              <span class="s-pts ${g.win===1?'s-pts-w':'s-pts-l'}">${g.s1}</span>
+            </div>
+            <div class="score-line ${g.win===2?'s-win':'s-lose'}">
+              <span class="s-name">${g.t2}</span>
+              <span class="s-pts ${g.win===2?'s-pts-w':'s-pts-l'}">${g.s2}</span>
+            </div>
+          </div>
+          <div class="score-status ${stCls}">${g.status}</div>
+        </div>`;
+    }
+  });
+}
+
+async function loadScores() {
+  try {
+    // Fetch all leagues in parallel
+    const [nfl, ncaafb, ncaamb, mlb, nba, ncaabb, intl] = await Promise.all([
+      fetchESPN('football', 'nfl'),
+      fetchESPN('football', 'college-football'),
+      fetchESPN('basketball', 'mens-college-basketball'),
+      fetchESPN('baseball', 'mlb'),
+      fetchESPN('basketball', 'nba'),
+      fetchESPN('baseball', 'college-baseball'),
+      fetchSoccer(),
+    ]);
+
+    const allGames = [];
+
+    // Parse each league
+    nfl.forEach(e    => { const g = parseGame(e, 'NFL');    if(g) allGames.push(g); });
+    ncaafb.forEach(e => { const g = parseGame(e, 'NCAAF');  if(g) allGames.push(g); });
+    ncaamb.forEach(e => { const g = parseGame(e, 'NCAAB');  if(g) allGames.push(g); });
+    mlb.forEach(e    => { const g = parseGame(e, 'MLB');    if(g) allGames.push(g); });
+    nba.forEach(e    => { const g = parseGame(e, 'NBA');    if(g) allGames.push(g); });
+    ncaabb.forEach(e => { const g = parseGame(e, 'NCAAB');  if(g) allGames.push(g); });
+    intl.forEach(e   => { const g = parseGame(e, 'INTL');   if(g) allGames.push(g); });
+
+    // Sort: ND first, Dallas second, live games next, then finals, then scheduled
+    allGames.sort((a, b) => {
+      const aND  = isND(a)     ? 0 : isND(b)     ? 1 : 0;
+      const bND  = isND(b)     ? 0 : 1;
+      if (isND(a) && !isND(b)) return -1;
+      if (!isND(a) && isND(b)) return 1;
+      if (isDallas(a) && !isDallas(b)) return -1;
+      if (!isDallas(a) && isDallas(b)) return 1;
+      if (a.live && !b.live) return -1;
+      if (!a.live && b.live) return 1;
+      return 0;
+    });
+
+    renderScoreTicker(allGames);
+    setTimeout(autoScrollScores, 500);
+
+  } catch(err) {
+    console.error('Scores load failed:', err);
+  }
+}
+
+loadScores();
+setInterval(loadScores, 5 * 60 * 1000); // refresh every 5 min
+
+
+// ── STATUS ──
+function updateStatus() {
+  const now = new Date();
+  document.getElementById('last-updated').textContent =
+    `Updated ${now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'})}`;
+}
+setInterval(updateStatus, 60000);
+updateStatus();
+
+// ── QUOTE OF THE DAY ──
+const quotes = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+  { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien" },
+  { text: "The purpose of our lives is to be happy.", author: "Dalai Lama" },
+  { text: "Get busy living or get busy dying.", author: "Stephen King" },
+  { text: "You only live once, but if you do it right, once is enough.", author: "Mae West" },
+  { text: "Many of life's failures are people who did not realize how close they were to success when they gave up.", author: "Thomas Edison" },
+  { text: "You have brains in your head. You have feet in your shoes. You can steer yourself any direction you choose.", author: "Dr. Seuss" },
+  { text: "If life were predictable it would cease to be life and be without flavor.", author: "Eleanor Roosevelt" },
+  { text: "If you look at what you have in life, you'll always have more.", author: "Oprah Winfrey" },
+  { text: "If you want to live a happy life, tie it to a goal, not to people or things.", author: "Albert Einstein" },
+  { text: "Never let the fear of striking out keep you from playing the game.", author: "Babe Ruth" },
+  { text: "Money and success don't change people; they merely amplify what is already there.", author: "Will Smith" },
+  { text: "Your time is limited, so don't waste it living someone else's life.", author: "Steve Jobs" },
+  { text: "Not how long, but how well you have lived is the main thing.", author: "Seneca" },
+  { text: "If life is not smiling at you, give it a good tickling.", author: "Unknown" },
+  { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },
+  { text: "In this life we cannot do great things. We can only do small things with great love.", author: "Mother Teresa" },
+  { text: "Only a life lived for others is a life worthwhile.", author: "Albert Einstein" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { text: "Great minds discuss ideas; average minds discuss events; small minds discuss people.", author: "Eleanor Roosevelt" },
+  { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle" },
+];
+
+function getDailyQuote() {
+  const now = new Date();
+  // Use day-of-year as seed so it changes daily but stays the same all day
+  const start = new Date(now.getFullYear(), 0, 0);
+  const diff = now - start;
+  const dayOfYear = Math.floor(diff / 86400000);
+  return quotes[dayOfYear % quotes.length];
+}
+
+const q = getDailyQuote();
+document.getElementById('quote-text').textContent = q.text;
+document.getElementById('quote-author').textContent = '— ' + q.author;
+
+// ── LIVE WEATHER (Open-Meteo, no API key needed) ──
+const WX_LAT = 41.7052;
+const WX_LON = -86.2354;
+
+const WMO_ICONS = {
+  0:'☀️', 1:'🌤️', 2:'⛅', 3:'☁️',
+  45:'🌫️', 48:'🌫️',
+  51:'🌦️', 53:'🌦️', 55:'🌧️',
+  61:'🌧️', 63:'🌧️', 65:'🌧️',
+  71:'❄️', 73:'❄️', 75:'❄️',
+  77:'❄️', 80:'🌦️', 81:'🌧️', 82:'⛈️',
+  85:'❄️', 86:'❄️',
+  95:'⛈️', 96:'⛈️', 99:'⛈️'
+};
+
+const WMO_DESC = {
+  0:'Clear Sky', 1:'Mostly Clear', 2:'Partly Cloudy', 3:'Overcast',
+  45:'Foggy', 48:'Foggy',
+  51:'Light Drizzle', 53:'Drizzle', 55:'Heavy Drizzle',
+  61:'Light Rain', 63:'Rain', 65:'Heavy Rain',
+  71:'Light Snow', 73:'Snow', 75:'Heavy Snow',
+  77:'Snow Grains', 80:'Light Showers', 81:'Showers', 82:'Heavy Showers',
+  85:'Snow Showers', 86:'Heavy Snow Showers',
+  95:'Thunderstorm', 96:'Thunderstorm w/ Hail', 99:'Thunderstorm w/ Hail'
+};
+
+function celsiusToF(c) { return Math.round(c * 9/5 + 32); }
+
+async function loadWeather() {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}` +
+      `&current=temperature_2m,weathercode,windspeed_10m,relative_humidity_2m` +
+      `&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max` +
+      `&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=6&timezone=America%2FChicago`;
+
+    const data = await fetch(url).then(r => r.json());
+    const cur  = data.current;
+    const day  = data.daily;
+
+    // Current conditions
+    const temp  = Math.round(cur.temperature_2m);
+    const code  = cur.weathercode;
+    const wind  = Math.round(cur.windspeed_10m);
+    const humid = cur.relative_humidity_2m;
+    const hiToday = Math.round(day.temperature_2m_max[0]);
+    const rainToday = day.precipitation_probability_max[0];
+
+    document.querySelector('.wx-temp span').textContent = temp;
+    document.querySelector('.wx-desc').textContent = WMO_DESC[code] || 'Unknown';
+    document.querySelector('.wx-icon').textContent = WMO_ICONS[code] || '🌡️';
+
+    // Stats
+    const statVals = document.querySelectorAll('.wx-stat-val');
+    if (statVals[0]) statVals[0].textContent = hiToday + '°';
+    if (statVals[1]) statVals[1].textContent = rainToday + '%';
+    if (statVals[2]) statVals[2].textContent = wind + 'mph';
+    if (statVals[3]) statVals[3].textContent = humid + '%';
+
+    // 5-day forecast (skip today = index 0, take next 5)
+    const fcDays = document.querySelectorAll('.wx-fc-day');
+    const DAYS_FC = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    fcDays.forEach((col, i) => {
+      const idx = i; // today is index 0
+      if (!day.temperature_2m_max[idx]) return;
+      const fcDate = new Date(day.time[idx] + 'T12:00:00');
+      const label  = i === 0 ? 'Today' : DAYS_FC[fcDate.getDay()];
+      const fcCode = day.weathercode[idx];
+      const fcHi   = Math.round(day.temperature_2m_max[idx]);
+      const fcRain = day.precipitation_probability_max[idx];
+
+      col.querySelector('.wx-fc-label').textContent  = label;
+      col.querySelector('.wx-fc-icon').textContent   = WMO_ICONS[fcCode] || '🌡️';
+      col.querySelector('.wx-fc-hi').textContent     = fcHi + '°';
+      col.querySelector('.wx-fc-precip').textContent = '💧 ' + fcRain + '%';
+    });
+
+  } catch(err) {
+    console.error('Weather load failed:', err);
+  }
+}
+
+loadWeather();
+setInterval(loadWeather, 15 * 60 * 1000); // refresh every 15 min
+</script>
+</body>
+</html>
