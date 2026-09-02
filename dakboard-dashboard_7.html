@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dakboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #080810;
+  color: #eeeeff;
+  font-family: "DM Sans", sans-serif;
+}
+
+:root {
+  --bg:      #080810;
+  --surface: #10101c;
+  --surface2:#181828;
+  --border:  #232338;
+  --nd-gold: #C99700;
+  --nd-navy: #0C2340;
+  --cs-silver:#869397;
+  --green:   #00e676;
+  --red:     #ff1744;
+  --cyan:    #00e5ff;
+  --yellow:  #ffea00;
+  --cream:   #f5f0e8;
+  --muted:   #6666aa;
+  --text:    #eeeeff;
+  --fd: "Bebas Neue", sans-serif;
+  --fb: "DM Sans", sans-serif;
+  --fm: "Space Mono", monospace;
+}
+
+/* ── LAYOUT: fixed vh rows ── */
+.dashboard {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Row heights add up to 100vh */
+.top-strip    { height: 11vh; flex-shrink:0; display:flex; }
+.cal-section  { height: 48vh; flex-shrink:0; background:var(--surface); border-bottom:3px solid var(--nd-gold); display:flex; flex-direction:column; padding:1vh 2vw; box-sizing:border-box; overflow:hidden; }
+.agenda-strip { height: 14vh; flex-shrink:0; background:var(--surface2); border-bottom:2px solid var(--border); display:flex; overflow:hidden; }
+
+.quote-section  { height: 5vh; flex-shrink:0; background:var(--nd-navy); border-top:1px solid rgba(201,151,0,0.2); display:flex; align-items:center; padding:0 2vw; gap:1vw; }
+.status-bar     { height: 4vh; flex-shrink:0; background:var(--nd-navy); border-top:3px solid var(--nd-gold); display:flex; justify-content:space-between; align-items:center; padding:0 2vw; }
+
+/* ── TOP STRIP ── */
+.time-pill {
+  background: linear-gradient(135deg,#0C2340,#162e52);
+  padding: 0 2vw;
+  display:flex; flex-direction:column; justify-content:center;
+  flex-shrink:0;
+  border-right: 3px solid var(--nd-gold);
+  min-width: 22vw;
+}
+.date-row { display:flex; align-items:baseline; gap:1vw; }
+.date-dayname { font-family:var(--fd); font-size:3.2vh; letter-spacing:3px; color:var(--nd-gold); line-height:1; }
+.date-full    { font-size:1.6vh; color:rgba(255,255,255,0.5); letter-spacing:1px; text-transform:uppercase; }
+.clock-row { display:flex; align-items:baseline; gap:0.3vw; line-height:1; }
+.clock-hhmm { font-family:var(--fd); font-size:5.5vh; color:#fff; letter-spacing:1px; }
+.clock-ss   { font-family:var(--fm); font-size:2.2vh; color:var(--nd-gold); }
+.clock-ampm { font-family:var(--fd); font-size:2.5vh; color:var(--nd-gold); letter-spacing:2px; }
+
+.weather-strip {
+  flex:1; background:var(--surface);
+  padding: 0 2vw;
+  display:flex; align-items:center; justify-content:space-between;
+  gap:2vw;
+  overflow:hidden;
+}
+.wx-left { display:flex; align-items:center; gap:1vw; flex-shrink:0; }
+.wx-icon { font-size:4vh; }
+.wx-temp { font-family:var(--fd); font-size:5.5vh; color:var(--cream); line-height:1; }
+.wx-temp sup { font-size:2.5vh; vertical-align:top; margin-top:0.5vh; display:inline-block; }
+.wx-desc { font-size:1.5vh; color:var(--text); }
+.wx-loc  { font-size:1.2vh; color:var(--muted); letter-spacing:1px; }
+.wx-stats { display:flex; gap:1.5vw; align-items:center; flex-shrink:0; }
+.wx-stat-label { font-size:1vh; letter-spacing:2px; text-transform:uppercase; color:var(--muted); }
+.wx-stat-val   { font-family:var(--fm); font-size:1.8vh; color:var(--cream); margin-top:2px; }
+.wx-forecast { display:flex; border-left:1px solid var(--border); padding-left:1.5vw; gap:0; flex-shrink:0; }
+.wx-fc-day { display:flex; flex-direction:column; align-items:center; gap:0.3vh; padding:0 0.8vw; border-right:1px solid var(--border); }
+.wx-fc-day:last-child { border-right:none; }
+.wx-fc-day.today-fc .wx-fc-label { color:var(--nd-gold); font-weight:700; }
+.wx-fc-label  { font-size:1vh; letter-spacing:1px; text-transform:uppercase; color:var(--muted); }
+.wx-fc-icon   { font-size:2.2vh; }
+.wx-fc-hi     { font-family:var(--fm); font-size:1.5vh; color:var(--cream); }
+.wx-fc-lo     { display:none; }
+.wx-fc-precip { font-size:1vh; color:var(--cream); opacity:0.7; }
+
+/* ── CALENDAR ── */
+.cal-header { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:0.8vh; }
+.cal-month-big { font-family:var(--fd); font-size:6vh; letter-spacing:4px; line-height:1; }
+.cal-month-big em { color:var(--nd-gold); font-style:normal; }
+.cal-week-badge { font-family:var(--fm); font-size:1.4vh; color:var(--muted); border:1px solid var(--border); padding:3px 10px; border-radius:4px; }
+
+.cal-dow-row { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:0.4vh; width:100%; }
+.cal-dow { text-align:center; font-size:1.3vh; letter-spacing:2px; text-transform:uppercase; color:var(--muted); padding:0.3vh 0; font-weight:500; }
+.cal-dow:first-child,.cal-dow:last-child { color:var(--nd-gold); opacity:0.7; }
+.cal-dow.today-col { color:var(--nd-gold) !important; opacity:1 !important; }
+
+.cal-days-grid {
+  display:grid; grid-template-columns:repeat(7,1fr);
+  grid-auto-rows: 1fr;
+  gap:3px;
+  flex:1;
+  width:100%;
+  min-height:0;
+}
+.cal-day {
+  display:flex; flex-direction:column;
+  align-items:flex-start; justify-content:flex-start;
+  padding:0.4vh 0.4vw;
+  border-radius:6px;
+  background:var(--surface2);
+  overflow:hidden;
+  box-sizing:border-box;
+}
+.cal-day.other-month { background:transparent; color:#2a2a44; }
+.cal-day.today { background:rgba(201,151,0,0.15); border:1px solid var(--nd-gold); }
+.cal-day.today-col-bg { background:rgba(201,151,0,0.05); }
+.day-num { font-family:var(--fm); font-size:1.5vh; line-height:1; margin-bottom:0.3vh; width:100%; text-align:right; }
+.cal-day.today .day-num { color:var(--nd-gold); font-weight:700; }
+.cal-event-pill {
+  width:100%; font-family:var(--fb); font-size:1.1vh; font-weight:600;
+  line-height:1.2; padding:2px 4px; border-radius:3px; margin-bottom:2px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff;
+}
+.cal-event-time { font-size:0.9vh; opacity:0.75; font-weight:400; display:block; margin-bottom:1px; }
+.cal-more { font-size:0.9vh; color:var(--muted); padding:1px 3px; }
+
+
+/* ── ND GAME BANNER ── */
+
+.nd-game-banner::before {
+  content: "☘";
+  position: absolute;
+  font-size: 18vh;
+  color: rgba(201,151,0,0.04);
+  right: -2vw;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 1;
+}
+
+.banner-helmet {
+  height: 5.5vh;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+.banner-vs-text {
+  font-family: var(--fd);
+  font-size: 2.2vh;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin: 0 0.5vw;
+}
+.banner-middle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2vh;
+  flex: 1;
+  padding: 0 1.5vw;
+}
+.banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.8vw;
+  flex-shrink: 0;
+}
+.banner-nd-logo {
+  font-size: 4vh;
+  filter: drop-shadow(0 0 8px rgba(201,151,0,0.5));
+}
+.banner-vs-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2vh;
+}
+.banner-matchup {
+  font-family: var(--fd);
+  font-size: 3.2vh;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: #fff;
+}
+.banner-matchup em {
+  color: var(--nd-gold);
+  font-style: normal;
+}
+.banner-details {
+  font-size: 1.3vh;
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.banner-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2vh;
+}
+.banner-countdown-label {
+  font-size: 1vh;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--nd-gold);
+  opacity: 0.8;
+}
+.banner-countdown {
+  font-family: var(--fd);
+  font-size: 3.5vh;
+  letter-spacing: 3px;
+  color: #fff;
+  line-height: 1;
+}
+.banner-countdown.game-day {
+  color: var(--nd-gold);
+  animation: pulse-gold 1s ease-in-out infinite;
+}
+@keyframes pulse-gold {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.6; }
+}
+.banner-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2vh;
+}
+.banner-network {
+  font-size: 1.2vh;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.banner-ranking {
+  font-family: var(--fd);
+  font-size: 2.5vh;
+  color: var(--nd-gold);
+  letter-spacing: 1px;
+}
+.banner-no-game {
+  font-family: var(--fd);
+  font-size: 2.2vh;
+  letter-spacing: 3px;
+  color: var(--muted);
+  text-align: center;
+  width: 100%;
+}
+/* ── AGENDA STRIP ── */
+.agenda-day-col { flex:1; border-right:1px solid var(--border); display:flex; flex-direction:column; min-height:0; }
+.agenda-day-col:last-child { border-right:none; }
+.agenda-day-header { padding:0.8vh 1vw; border-bottom:1px solid var(--border); position:relative; }
+.agenda-day-header.is-today { background:linear-gradient(135deg,rgba(201,151,0,0.18),transparent); border-bottom-color:var(--nd-gold); }
+.agenda-dow { font-family:var(--fd); font-size:1.8vh; letter-spacing:3px; color:var(--muted); line-height:1; }
+.agenda-day-header.is-today .agenda-dow { color:var(--nd-gold); }
+.agenda-daynum { font-family:var(--fd); font-size:3.5vh; line-height:1; color:var(--text); }
+.agenda-day-header.is-today .agenda-daynum { color:var(--nd-gold); }
+.agenda-count-badge { position:absolute; top:0.6vh; right:0.6vw; background:var(--nd-gold); color:#000; font-size:1vh; font-weight:700; width:2vh; height:2vh; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--fm); z-index:2; }
+.agenda-events { flex:1; padding:0.5vh 0.8vw 0.5vh; display:flex; flex-direction:column; gap:0.4vh; overflow:hidden; }
+.agenda-event-chip { display:flex; gap:0.5vw; align-items:flex-start; }
+.chip-bar { width:3px; border-radius:2px; flex-shrink:0; align-self:stretch; min-height:2vh; }
+.chip-time  { font-family:var(--fm); font-size:1.1vh; color:var(--muted); margin-bottom:1px; }
+.chip-title { font-size:1.3vh; font-weight:500; line-height:1.3; color:var(--text); }
+.no-events  { font-size:1.1vh; color:var(--border); font-style:italic; }
+
+
+
+
+/* ── ND SCORE PANEL ── */
+.nd-score-panel {
+  height: 11vh;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #0a1e38 0%, #0C2340 60%, #0a1e38 100%);
+  border-top: 1px solid rgba(201,151,0,0.3);
+  border-bottom: 1px solid rgba(201,151,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2vw;
+  gap: 1vw;
+  overflow: hidden;
+  position: relative;
+}
+.nd-score-panel::before {
+  content: "☘";
+  position: absolute;
+  font-size: 20vh;
+  color: rgba(201,151,0,0.03);
+  right: -1vw;
+  top: 50%;
+  transform: translateY(-50%);
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* Countdown mode */
+.ndp-countdown-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 2vw;
+}
+.ndp-helmets {
+  display: flex;
+  align-items: center;
+  gap: 0.8vw;
+  flex-shrink: 0;
+}
+.ndp-helmet {
+  height: 7vh;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.6));
+}
+.ndp-vs {
+  font-family: var(--fd);
+  font-size: 1.8vh;
+  color: var(--muted);
+  letter-spacing: 2px;
+}
+.ndp-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3vh;
+}
+.ndp-matchup {
+  font-family: var(--fd);
+  font-size: 2.8vh;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: #fff;
+}
+.ndp-matchup em { color: var(--nd-gold); font-style: normal; }
+.ndp-details {
+  font-size: 1.2vh;
+  color: rgba(255,255,255,0.5);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.ndp-countdown-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  min-width: 18vw;
+}
+.ndp-countdown-label {
+  font-size: 1vh;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--nd-gold);
+  opacity: 0.8;
+  margin-bottom: 0.2vh;
+}
+.ndp-countdown {
+  font-family: var(--fd);
+  font-size: 4.5vh;
+  letter-spacing: 3px;
+  color: #fff;
+  line-height: 1;
+}
+.ndp-countdown.game-day { color: var(--nd-gold); }
+.ndp-network {
+  font-size: 1.1vh;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: 0.3vh;
+}
+
+/* Live score mode */
+.ndp-live-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 1.5vw;
+}
+.ndp-live-badge {
+  font-size: 1vh;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(255,23,68,0.15);
+  color: var(--red);
+  border: 1px solid rgba(255,23,68,0.4);
+  flex-shrink: 0;
+}
+.ndp-live-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  margin-right: 4px;
+  animation: blink 1s ease-in-out infinite;
+}
+.ndp-score-block {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 2vw;
+}
+.ndp-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4vh;
+}
+.ndp-team-logo {
+  height: 5.5vh;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+}
+.ndp-team-name {
+  font-family: var(--fd);
+  font-size: 1.5vh;
+  letter-spacing: 2px;
+  color: var(--muted);
+}
+.ndp-score-num {
+  font-family: var(--fd);
+  font-size: 7vh;
+  line-height: 1;
+  color: #fff;
+}
+.ndp-score-num.winning { color: var(--nd-gold); }
+.ndp-score-num.losing  { color: var(--muted); }
+.ndp-score-divider {
+  font-family: var(--fd);
+  font-size: 4vh;
+  color: var(--muted);
+  opacity: 0.4;
+}
+.ndp-game-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4vh;
+  flex-shrink: 0;
+}
+.ndp-period {
+  font-family: var(--fd);
+  font-size: 2.5vh;
+  color: var(--nd-gold);
+  letter-spacing: 2px;
+}
+.ndp-clock {
+  font-family: var(--fm);
+  font-size: 1.8vh;
+  color: var(--muted);
+}
+.ndp-final {
+  font-family: var(--fd);
+  font-size: 2.5vh;
+  color: var(--muted);
+  letter-spacing: 3px;
+}
+
+/* ── QUOTE ── */
+.quote-mark { font-family:var(--fd); font-size:5vh; line-height:0.8; color:var(--nd-gold); opacity:0.35; flex-shrink:0; }
+.quote-text { font-size:1.5vh; font-weight:300; font-style:italic; line-height:1.4; color:rgba(255,255,255,0.85); }
+.quote-author { font-family:var(--fm); font-size:1.1vh; color:var(--nd-gold); letter-spacing:2px; text-transform:uppercase; margin-top:0.3vh; }
+
+/* ── STATUS ── */
+.status-item { display:flex; align-items:center; gap:0.5vw; font-size:1.2vh; color:rgba(255,255,255,0.65); }
+.status-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 8px var(--green); animation:blink 3s ease-in-out infinite; }
+
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="dashboard">
+
+  <!-- TOP STRIP -->
+  <div class="top-strip">
+    <div class="time-pill">
+      <div class="date-row">
+        <div class="date-dayname" id="dayname">SUNDAY</div>
+        <div class="date-full" id="datefull">June 7, 2026</div>
+      </div>
+      <div class="clock-row">
+        <span class="clock-hhmm" id="hhmm">09:18</span>
+        <span class="clock-ss"   id="ss">:00</span>
+        <span class="clock-ampm" id="ampm">AM</span>
+      </div>
+    </div>
+    <div class="weather-strip">
+      <div class="wx-left">
+        <div class="wx-icon" id="wx-icon">⛅</div>
+        <div>
+          <div class="wx-temp"><span id="wx-temp">77</span><sup>°F</sup></div>
+          <div class="wx-desc" id="wx-desc">Overcast</div>
+          <div class="wx-loc">📍 Notre Dame, IN</div>
+        </div>
+      </div>
+      <div class="wx-stats">
+        <div class="wx-stat"><div class="wx-stat-label">High</div><div class="wx-stat-val" id="wx-hi">--°</div></div>
+        <div class="wx-stat"><div class="wx-stat-label">Rain</div><div class="wx-stat-val" id="wx-rain">--%</div></div>
+        <div class="wx-stat"><div class="wx-stat-label">Wind</div><div class="wx-stat-val" id="wx-wind">--mph</div></div>
+        <div class="wx-stat"><div class="wx-stat-label">Humid</div><div class="wx-stat-val" id="wx-humid">--%</div></div>
+      </div>
+      <div class="wx-forecast" id="wx-forecast">
+        <div class="wx-fc-day today-fc"><div class="wx-fc-label">Today</div><div class="wx-fc-icon">⛅</div><div class="wx-fc-hi">--°</div><div class="wx-fc-precip">💧--%</div></div>
+        <div class="wx-fc-day"><div class="wx-fc-label">Mon</div><div class="wx-fc-icon">🌤️</div><div class="wx-fc-hi">--°</div><div class="wx-fc-precip">💧--%</div></div>
+        <div class="wx-fc-day"><div class="wx-fc-label">Tue</div><div class="wx-fc-icon">🌤️</div><div class="wx-fc-hi">--°</div><div class="wx-fc-precip">💧--%</div></div>
+        <div class="wx-fc-day"><div class="wx-fc-label">Wed</div><div class="wx-fc-icon">🌤️</div><div class="wx-fc-hi">--°</div><div class="wx-fc-precip">💧--%</div></div>
+        <div class="wx-fc-day"><div class="wx-fc-label">Thu</div><div class="wx-fc-icon">🌤️</div><div class="wx-fc-hi">--°</div><div class="wx-fc-precip">💧--%</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="cal-section">
+    <div class="cal-header">
+      <div class="cal-month-big" id="cal-heading">JUNE <em>2026</em></div>
+      <div class="cal-week-badge" id="cal-week-badge">WEEK 23</div>
+    </div>
+    <div class="cal-dow-row">
+      <div class="cal-dow">Sun</div><div class="cal-dow">Mon</div><div class="cal-dow">Tue</div>
+      <div class="cal-dow">Wed</div><div class="cal-dow">Thu</div><div class="cal-dow">Fri</div>
+      <div class="cal-dow">Sat</div>
+    </div>
+    <div class="cal-days-grid" id="cal-days"></div>
+  </div>
+
+  <!-- ND GAME BANNER -->
+  <div class="nd-game-banner" id="nd-game-banner">
+    <div class="banner-left">
+      <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/87.png" class="banner-helmet" alt="Notre Dame" id="nd-helmet">
+      <div class="banner-vs-text">VS</div>
+      <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/275.png" class="banner-helmet" alt="Opponent" id="opp-helmet">
+    </div>
+    <div class="banner-middle">
+      <div class="banner-matchup" id="banner-matchup"><em>NOTRE DAME</em> vs TBD</div>
+      <div class="banner-details" id="banner-details">Loading schedule...</div>
+    </div>
+    <div class="banner-center">
+      <div class="banner-countdown-label" id="countdown-label">KICKOFF IN</div>
+      <div class="banner-countdown" id="banner-countdown">--:--:--</div>
+    </div>
+    <div class="banner-right">
+      <div class="banner-network" id="banner-network">--</div>
+      <div class="banner-ranking" id="banner-ranking"></div>
+    </div>
+  </div>
+
+  <!-- AGENDA STRIP -->
+  <div class="agenda-strip" id="agenda-strip"></div>
+      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    </div>
+    <div class="scores-ticker" id="scores-ticker"></div>
+  </div>
+
+  <!-- ND SCORE PANEL -->
+  <div class="nd-score-panel" id="nd-score-panel">
+    <!-- Populated by JS -->
+  </div>
+
+  <!-- QUOTE -->
+  <div class="quote-section">
+    <div class="quote-mark">"</div>
+    <div>
+      <div class="quote-text"   id="quote-text">Loading...</div>
+      <div class="quote-author" id="quote-author">—</div>
+    </div>
+  </div>
+
+  <!-- STATUS -->
+  <div class="status-bar">
+    <div class="status-item"><div class="status-dot"></div> Google Calendar Synced</div>
+    <div class="nd-mark">☘ GO IRISH</div>
+    <div class="status-item" id="last-updated">Updated just now</div>
+  </div>
+
+</div>
+<script>
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  let h = now.getHours();
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  const m = String(now.getMinutes()).padStart(2,"0");
+  const s = String(now.getSeconds()).padStart(2,"0");
+  document.getElementById("hhmm").textContent = `${String(h).padStart(2,"0")}:${m}`;
+  document.getElementById("ss").textContent   = `:${s}`;
+  document.getElementById("ampm").textContent = ampm;
+  const DAYS = ["SUNDAY","MONDAY","TUESDAY","WEDNESDAY","THURSDAY","FRIDAY","SATURDAY"];
+  document.getElementById("dayname").textContent  = DAYS[now.getDay()];
+  document.getElementById("datefull").textContent = now.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── CALENDAR ──
+const MONTHS_LONG  = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAYS_SHORT   = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
+
+// ── GOOGLE CALENDAR API ──
+const GCAL_API_KEY = "AIzaSyDQeZzDXShJ0qi4bieN6V02lCvCzKqsGkI";
+const CALENDAR_IDS = [
+  "d80f4844ae8c2f869f660d6e6078b0f184451702d45fbbd2f3a66692f80c1f50@group.calendar.google.com",
+  "jramaeker@gmail.com",
+  "a53339bf3b5e37f4057d8f4a42b90ef80e5cad84eae80fabc97eaffc0589ad02@group.calendar.google.com",
+  "220e3efc2bf8ebcc0aa3969aa5d6917b7ddddabde6c1e5b01557dc9cf45253b7@group.calendar.google.com",
+  "c9a812107a0db75640adc93b84b0529027d096a869e96f14a4bdfeee9558c6f5@group.calendar.google.com",
+  "family11371226280449696764@group.calendar.google.com",
+];
+
+const CALENDAR_COLORS = ["#ff3366","#C99700","#7c3aed","#00e5ff","#ffea00","#00e676"];
+
+const calEvents = [];
+
+async function fetchOneCalendar(calId, colorIndex) {
+  try {
+    const now    = new Date();
+    const min    = now.toISOString();
+    const max    = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString(); // 60 days ahead
+    const color  = CALENDAR_COLORS[colorIndex % CALENDAR_COLORS.length];
+    const url    = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events` +
+      `?key=${GCAL_API_KEY}&timeMin=${min}&timeMax=${max}&singleEvents=true&orderBy=startTime&maxResults=100`;
+
+    const data = await fetch(url).then(r => r.json());
+
+    if (!data.items) { console.warn("No items for", calId, data); return; }
+
+    data.items.forEach(item => {
+      if (!item.start) return;
+      const isAllDay = !!item.start.date;
+      const startStr = item.start.dateTime || item.start.date;
+      const endStr   = item.end?.dateTime   || item.end?.date;
+      const start    = new Date(startStr);
+      const end      = endStr ? new Date(endStr) : start;
+
+      if (isAllDay) {
+        // Multi-day all-day events — add entry for each day
+        const cur = new Date(item.start.date + "T00:00:00");
+        const endDate = new Date(item.end.date + "T00:00:00");
+        while (cur < endDate) {
+          const ds = cur.toISOString().slice(0,10);
+          if (ds >= now.toISOString().slice(0,10)) {
+            calEvents.push({ date: ds, title: item.summary || "(No title)", time: "All Day", color });
+          }
+          cur.setDate(cur.getDate() + 1);
+        }
+      } else {
+        const ds = start.toISOString().slice(0,10);
+        calEvents.push({
+          date:  ds,
+          title: item.summary || "(No title)",
+          time:  start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
+          color
+        });
+      }
+    });
+  } catch(e) {
+    console.error("Failed to load calendar:", calId, e);
+  }
+}
+
+async function loadCalendar() {
+  calEvents.length = 0; // clear before reload
+  await Promise.all(CALENDAR_IDS.map((id, i) => fetchOneCalendar(id, i)));
+  calEvents.sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function buildCalendar() {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const today = now.getDate();
+
+  document.getElementById("cal-heading").innerHTML = `${MONTHS_LONG[month].toUpperCase()} <em>${year}</em>`;
+  const startOfYear = new Date(year,0,1);
+  const weekNum = Math.ceil(((now-startOfYear)/86400000 + startOfYear.getDay()+1)/7);
+  document.getElementById("cal-week-badge").textContent = `WEEK ${weekNum}`;
+
+  const dowHeaders = document.querySelectorAll(".cal-dow");
+  dowHeaders.forEach((el,i) => { if(i===now.getDay()) el.classList.add("today-col"); });
+
+  const eventMap = {};
+  calEvents.forEach(ev => { if(!eventMap[ev.date]) eventMap[ev.date]=[]; eventMap[ev.date].push(ev); });
+
+  const firstDay  = new Date(year,month,1).getDay();
+  const daysInMo  = new Date(year,month+1,0).getDate();
+  const prevDays  = new Date(year,month,0).getDate();
+  const grid = document.getElementById("cal-days");
+  grid.innerHTML = "";
+
+  const addCell = (num, cls, ds) => {
+    const cell = document.createElement("div");
+    cell.className = "cal-day " + cls;
+    let inner = `<span class="day-num">${num}</span>`;
+    if (ds && eventMap[ds]) {
+      const evs = eventMap[ds];
+      evs.slice(0,2).forEach(ev => {
+        inner += `<div class="cal-event-pill" style="background:${ev.color}88;border-left:3px solid ${ev.color}"><span class="cal-event-time">${ev.time}</span>${ev.title}</div>`;
+      });
+      if (evs.length > 2) inner += `<div class="cal-more">+${evs.length-2} more</div>`;
+    }
+    cell.innerHTML = inner;
+    grid.appendChild(cell);
+  };
+
+  for (let i=firstDay-1; i>=0; i--) addCell(prevDays-i,"other-month",null);
+  for (let d=1; d<=daysInMo; d++) {
+    const ds  = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    const dow = new Date(year,month,d).getDay();
+    const cls = d===today ? "today" : (dow===now.getDay() ? "today-col-bg" : "");
+    addCell(d, cls, ds);
+  }
+  const total = firstDay+daysInMo;
+  const rem   = total%7===0?0:7-(total%7);
+  for (let d=1; d<=rem; d++) addCell(d,"other-month",null);
+}
+
+function buildAgenda() {
+  const now   = new Date();
+  const strip = document.getElementById("agenda-strip");
+  strip.innerHTML = "";
+  for (let i=0; i<5; i++) {
+    const d  = new Date(now); d.setDate(now.getDate()+i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const isToday = i===0;
+    const dayEvents = calEvents.filter(e => e.date===ds);
+    const badgeHTML = dayEvents.length ? `<div class="agenda-count-badge">${dayEvents.length}</div>` : "";
+    const evHTML = dayEvents.length
+      ? dayEvents.slice(0,3).map(ev=>`<div class="agenda-event-chip"><div class="chip-bar" style="background:${ev.color}"></div><div><div class="chip-time">${ev.time}</div><div class="chip-title">${ev.title}</div></div></div>`).join("")
+      : `<div class="no-events">No events</div>`;
+    const col = document.createElement("div");
+    col.className = "agenda-day-col";
+    col.innerHTML = `<div class="agenda-day-header${isToday?" is-today":""}"><div class="agenda-dow">${DAYS_SHORT[d.getDay()]}</div><div class="agenda-daynum">${d.getDate()}</div>${badgeHTML}</div><div class="agenda-events">${evHTML}</div>`;
+    strip.appendChild(col);
+  }
+}
+
+loadCalendar().then(() => { buildCalendar(); buildAgenda(); });
+setInterval(() => {
+  loadCalendar().then(() => { buildCalendar(); buildAgenda(); });
+}, 30 * 60 * 1000); // refresh every 30 min
+
+// ── WEATHER ──
+const WX_LAT = 41.7052, WX_LON = -86.2354;
+const WMO_ICONS = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",73:"❄️",75:"❄️",77:"❄️",80:"🌦️",81:"🌧️",82:"⛈️",85:"❄️",86:"❄️",95:"⛈️",96:"⛈️",99:"⛈️"};
+const WMO_DESC  = {0:"Clear Sky",1:"Mostly Clear",2:"Partly Cloudy",3:"Overcast",45:"Foggy",48:"Foggy",51:"Light Drizzle",53:"Drizzle",55:"Heavy Drizzle",61:"Light Rain",63:"Rain",65:"Heavy Rain",71:"Light Snow",73:"Snow",75:"Heavy Snow",77:"Snow Grains",80:"Light Showers",81:"Showers",82:"Heavy Showers",85:"Snow Showers",86:"Heavy Snow",95:"Thunderstorm",96:"Thunderstorm w/ Hail",99:"Thunderstorm w/ Hail"};
+const DAYS_FC   = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+async function loadWeather(retries=3) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}&current=temperature_2m,weathercode,windspeed_10m,relative_humidity_2m&daily=temperature_2m_max,temperature_2m_min,weathercode,precipitation_probability_max&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=6&timezone=America%2FChicago`;
+    const res  = await fetch(url);
+    if (!res.ok) throw new Error("Weather fetch failed");
+    const data = await res.json();
+    const cur = data.current, day = data.daily;
+    document.getElementById("wx-temp").textContent  = Math.round(cur.temperature_2m);
+    document.getElementById("wx-desc").textContent  = WMO_DESC[cur.weathercode]||"Unknown";
+    document.getElementById("wx-icon").textContent  = WMO_ICONS[cur.weathercode]||"🌡️";
+    document.getElementById("wx-hi").textContent    = Math.round(day.temperature_2m_max[0])+"°";
+    document.getElementById("wx-rain").textContent  = day.precipitation_probability_max[0]+"%";
+    document.getElementById("wx-wind").textContent  = Math.round(cur.windspeed_10m)+"mph";
+    document.getElementById("wx-humid").textContent = cur.relative_humidity_2m+"%";
+    const fcCols = document.querySelectorAll(".wx-fc-day");
+    fcCols.forEach((col,i) => {
+      if (!day.temperature_2m_max[i]) return;
+      const fcDate = new Date(day.time[i]+"T12:00:00");
+      col.querySelector(".wx-fc-label").textContent  = i===0?"Today":DAYS_FC[fcDate.getDay()];
+      col.querySelector(".wx-fc-icon").textContent   = WMO_ICONS[day.weathercode[i]]||"🌡️";
+      col.querySelector(".wx-fc-hi").textContent     = Math.round(day.temperature_2m_max[i])+"°";
+      col.querySelector(".wx-fc-precip").textContent = "💧"+day.precipitation_probability_max[i]+"%";
+    });
+  } catch(e) { console.error("Weather failed:", e); if(retries>0) setTimeout(()=>loadWeather(retries-1), 5000); }
+}
+loadWeather();
+setInterval(loadWeather, 15*60*1000);
+
+
+
+
+// ── ND SCORE PANEL ──
+const ND_ID = "87"; // ESPN team ID for Notre Dame
+
+function getNextNDGame() {
+  const now = new Date();
+  for (const game of ND_SCHEDULE) {
+    const kickoff = new Date(`${game.date}T${game.time}:00`);
+    const gameEnd = new Date(kickoff.getTime() + 4 * 60 * 60 * 1000);
+    if (gameEnd > now) return { ...game, kickoff };
+  }
+  return null;
+}
+
+// Show countdown panel
+function showCountdown(game) {
+  const panel = document.getElementById("nd-score-panel");
+  const now   = new Date();
+  const diff  = game.kickoff - now;
+
+  let countdownStr, label, extraCls = "";
+  if (diff <= 0) {
+    countdownStr = "KICKOFF!";
+    label = "🏈 IT'S GAME TIME";
+    extraCls = "game-day";
+  } else {
+    const days  = Math.floor(diff / (1000*60*60*24));
+    const hours = Math.floor((diff % (1000*60*60*24)) / (1000*60*60));
+    const mins  = Math.floor((diff % (1000*60*60)) / (1000*60));
+    const secs  = Math.floor((diff % (1000*60)) / 1000);
+    if (days > 0) {
+      countdownStr = `${days}d ${String(hours).padStart(2,"0")}h ${String(mins).padStart(2,"0")}m`;
+      label = "KICKOFF IN";
+    } else {
+      countdownStr = `${String(hours).padStart(2,"0")}:${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+      label = hours === 0 && days === 0 ? "KICKOFF TODAY IN" : "KICKOFF IN";
+      if (days === 0) extraCls = "game-day";
+    }
+  }
+
+  const kickoffStr = game.kickoff.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"}) +
+    " · " + game.kickoff.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}) + " ET";
+
+  panel.innerHTML = `
+    <div class="ndp-countdown-wrap">
+      <div class="ndp-helmets">
+        <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/${ND_ID}.png" class="ndp-helmet" alt="Notre Dame">
+        <div class="ndp-vs">VS</div>
+        <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/${game.oppId}.png" class="ndp-helmet" alt="${game.opponent}">
+      </div>
+      <div class="ndp-info">
+        <div class="ndp-matchup"><em>NOTRE DAME</em> vs ${game.opponent.toUpperCase()}</div>
+        <div class="ndp-details">${game.location} · ${kickoffStr} · ${game.network}</div>
+      </div>
+      <div class="ndp-countdown-block">
+        <div class="ndp-countdown-label">${label}</div>
+        <div class="ndp-countdown ${extraCls}">${countdownStr}</div>
+        ${game.ranking ? `<div class="ndp-network">${game.ranking}</div>` : ""}
+      </div>
+    </div>`;
+}
+
+// Show live score panel
+function showLiveScore(ndScore, oppScore, oppName, oppId, period, clock, isFinal) {
+  const panel = document.getElementById("nd-score-panel");
+  const ndWin = ndScore >= oppScore;
+  const statusHTML = isFinal
+    ? `<div class="ndp-final">FINAL</div>`
+    : `<div class="ndp-period">${period}</div><div class="ndp-clock">${clock}</div>`;
+
+  const liveHTML = isFinal ? "" : `<span class="ndp-live-dot"></span>LIVE`;
+
+  panel.innerHTML = `
+    <div class="ndp-live-wrap">
+      ${!isFinal ? '<div class="ndp-live-badge"><span class="ndp-live-dot"></span>LIVE</div>' : ""}
+      <div class="ndp-score-block">
+        <div class="ndp-team">
+          <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/${ND_ID}.png" class="ndp-team-logo" alt="Notre Dame">
+          <div class="ndp-team-name">NOTRE DAME</div>
+        </div>
+        <div class="ndp-score-num ${ndWin ? 'winning' : 'losing'}">${ndScore}</div>
+        <div class="ndp-score-divider">–</div>
+        <div class="ndp-score-num ${!ndWin ? 'winning' : 'losing'}">${oppScore}</div>
+        <div class="ndp-team">
+          <img src="https://a.espncdn.com/i/teamlogos/ncaa/500/${oppId}.png" class="ndp-team-logo" alt="${oppName}">
+          <div class="ndp-team-name">${oppName.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="ndp-game-status">${statusHTML}</div>
+    </div>`;
+}
+
+// No game mode
+function showNoGame() {
+  const panel = document.getElementById("nd-score-panel");
+  panel.innerHTML = `<div style="font-family:var(--fd);font-size:2vh;letter-spacing:3px;color:var(--muted);text-align:center;width:100%">☘ NOTRE DAME SEASON COMPLETE — GO IRISH ☘</div>`;
+}
+
+// Main update function
+async function updateNDPanel() {
+  const game = getNextNDGame();
+  if (!game) { showNoGame(); return; }
+
+  const now     = new Date();
+  const kickoff = game.kickoff;
+  const gameEnd = new Date(kickoff.getTime() + 4 * 60 * 60 * 1000);
+
+  // Check if game is live or just finished (within 4hr window)
+  if (now >= kickoff && now <= gameEnd) {
+    try {
+      const today = now.toISOString().slice(0,10).replace(/-/g,"");
+      const data  = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${today}&groups=80`).then(r=>r.json());
+      const ndGame = data.events?.find(e =>
+        e.competitions[0].competitors.some(c => c.team.id === ND_ID || c.team.abbreviation === "ND")
+      );
+
+      if (ndGame) {
+        const comp = ndGame.competitions[0];
+        const nd   = comp.competitors.find(c => c.team.id === ND_ID || c.team.abbreviation === "ND");
+        const opp  = comp.competitors.find(c => c.team.id !== ND_ID && c.team.abbreviation !== "ND");
+        const status = comp.status.type;
+        const isFinal = status.state === "post";
+        const period  = comp.status.period ? `${comp.status.period}Q` : status.shortDetail;
+        const clock   = comp.status.displayClock || "";
+        showLiveScore(
+          parseInt(nd?.score || 0),
+          parseInt(opp?.score || 0),
+          opp?.team.shortDisplayName || game.opponent,
+          game.oppId,
+          period, clock, isFinal
+        );
+        return;
+      }
+    } catch(e) { /* fall through to countdown */ }
+  }
+
+  // Check if it's Monday after the game — show next game
+  // (getNextNDGame already handles this by finding next unfinished game)
+  showCountdown(game);
+}
+
+updateNDPanel();
+setInterval(updateNDPanel, 30000); // refresh every 30 seconds
+
+// Also update countdown every second when no live game
+function tickCountdown() {
+  const panel = document.getElementById("nd-score-panel");
+  if (panel && panel.querySelector(".ndp-countdown")) {
+    const game = getNextNDGame();
+    if (game) showCountdown(game);
+  }
+}
+setInterval(tickCountdown, 1000);
+
+// ── QUOTE ──
+const quotes = [
+  { text: "The secret of getting ahead is getting started.", author: "Mark Twain" },
+  { text: "It does not matter how slowly you go as long as you do not stop.", author: "Confucius" },
+  { text: "Life is what happens when you're busy making other plans.", author: "John Lennon" },
+  { text: "In the middle of every difficulty lies opportunity.", author: "Albert Einstein" },
+  { text: "Believe you can and you're halfway there.", author: "Theodore Roosevelt" },
+  { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },
+  { text: "Success is not final, failure is not fatal: it is the courage to continue that counts.", author: "Winston Churchill" },
+  { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+  { text: "It always seems impossible until it's done.", author: "Nelson Mandela" },
+  { text: "Do what you can, with what you have, where you are.", author: "Theodore Roosevelt" },
+  { text: "The best time to plant a tree was 20 years ago. The second best time is now.", author: "Chinese Proverb" },
+  { text: "Whether you think you can or you think you can't, you're right.", author: "Henry Ford" },
+  { text: "Not all those who wander are lost.", author: "J.R.R. Tolkien" },
+  { text: "The purpose of our lives is to be happy.", author: "Dalai Lama" },
+  { text: "Get busy living or get busy dying.", author: "Stephen King" },
+  { text: "You only live once, but if you do it right, once is enough.", author: "Mae West" },
+  { text: "Many of life's failures are people who did not realize how close they were to success when they gave up.", author: "Thomas Edison" },
+  { text: "You have brains in your head. You have feet in your shoes. You can steer yourself any direction you choose.", author: "Dr. Seuss" },
+  { text: "If life were predictable it would cease to be life and be without flavor.", author: "Eleanor Roosevelt" },
+  { text: "If you look at what you have in life, you'll always have more.", author: "Oprah Winfrey" },
+  { text: "If you want to live a happy life, tie it to a goal, not to people or things.", author: "Albert Einstein" },
+  { text: "Never let the fear of striking out keep you from playing the game.", author: "Babe Ruth" },
+  { text: "Money and success don't change people; they merely amplify what is already there.", author: "Will Smith" },
+  { text: "Your time is limited, so don't waste it living someone else's life.", author: "Steve Jobs" },
+  { text: "Not how long, but how well you have lived is the main thing.", author: "Seneca" },
+  { text: "If life is not smiling at you, give it a good tickling.", author: "Unknown" },
+  { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },
+  { text: "In this life we cannot do great things. We can only do small things with great love.", author: "Mother Teresa" },
+  { text: "Only a life lived for others is a life worthwhile.", author: "Albert Einstein" },
+  { text: "The way to get started is to quit talking and begin doing.", author: "Walt Disney" },
+  { text: "Great minds discuss ideas; average minds discuss events; small minds discuss people.", author: "Eleanor Roosevelt" },
+  { text: "It is during our darkest moments that we must focus to see the light.", author: "Aristotle" },
+];
+function getDailyQuote() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(),0,0);
+  const dayOfYear = Math.floor((now-start)/86400000);
+  return quotes[dayOfYear % quotes.length];
+}
+const q = getDailyQuote();
+document.getElementById("quote-text").textContent   = q.text;
+document.getElementById("quote-author").textContent = "— " + q.author;
+
+// ── STATUS ──
+function updateStatus() {
+  document.getElementById("last-updated").textContent = "Updated "+new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+}
+setInterval(updateStatus,60000);
+updateStatus();
+</script>
+</body>
+</html>
