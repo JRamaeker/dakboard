@@ -140,6 +140,7 @@ const EVENING_HOUR = 20;   // from 8 PM the big list shows tomorrow
 const NIGHT = [22, 6];     // dim between 10 PM and 6 AM
 const NEXT_DAYS = 6;       // rows under the big list
 const LATER_DAYS = 21;     // "Coming up" looks this far past the rows
+const LATER_MAX = 8;       // and shows at most this many (two columns of four)
 
 // ── HELPERS ──
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -191,7 +192,7 @@ async function loadCalendars() {
     + new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 }
 
-const WMO = {0:["☀️","Clear"],1:["🌤️","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Overcast"],45:["🌫️","Fog"],48:["🌫️","Fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Drizzle"],56:["🌧️","Freezing drizzle"],57:["🌧️","Freezing drizzle"],61:["🌧️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],66:["🌧️","Freezing rain"],67:["🌧️","Freezing rain"],71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["❄️","Heavy snow"],77:["🌨️","Snow"],80:["🌦️","Showers"],81:["🌧️","Showers"],82:["⛈️","Heavy showers"],85:["🌨️","Snow showers"],86:["❄️","Snow showers"],95:["⛈️","Thunderstorms"],96:["⛈️","T-storms"],99:["⛈️","T-storms"]};
+const WMO = {0:["☀️","Clear"],1:["🌤️","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Overcast"],45:["☁️","Fog"],48:["☁️","Fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Drizzle"],56:["🌧️","Freezing drizzle"],57:["🌧️","Freezing drizzle"],61:["🌧️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],66:["🌧️","Freezing rain"],67:["🌧️","Freezing rain"],71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["❄️","Heavy snow"],77:["🌨️","Snow"],80:["🌦️","Showers"],81:["🌧️","Showers"],82:["⛈️","Heavy showers"],85:["🌨️","Snow showers"],86:["❄️","Snow showers"],95:["⛈️","Thunderstorms"],96:["⛈️","T-storms"],99:["⛈️","T-storms"]};
 const wmo = c => WMO[c] || ["🌡️","—"];
 
 async function loadWeather(retries=6) {
@@ -315,6 +316,7 @@ function renderLater(heroDay) {
     const t = e.title.toLowerCase();
     if (soon.has(t) || seen.has(t)) continue;   // skip routines already on screen, and repeats
     seen.add(t); picks.push(e);
+    if (picks.length >= LATER_MAX) break;
   }
   $("later").innerHTML = picks.length
     ? `<h3>Coming up</h3><ul>${picks.map(e => { const [y,m,d] = e.key.split("-").map(Number), dt = new Date(y,m-1,d);
