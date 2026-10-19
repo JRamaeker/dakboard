@@ -35,10 +35,9 @@ body.night { filter:brightness(.55); }
 .game-line img { height:4.4rem; }
 .game-line .gl-main { flex:1; min-width:0; }
 .game-line b { display:block; color:var(--gold); font-family:var(--fd); font-size:2.6rem; letter-spacing:.1rem; font-weight:400; line-height:1.05; }
-.game-line .where { font-size:1.6rem; white-space:normal; }
+.game-line .where, .game-line .wh { font-size:1.6rem; overflow:hidden; }
 .game-line .gl-when { margin-left:auto; text-align:right; flex-shrink:0; }
 .game-line .cd { font-family:var(--fd); font-size:2.8rem; color:var(--text); letter-spacing:.1rem; line-height:1.05; }
-.game-line .wh { font-size:1.6rem; }
 .gameday .where { font-size:1.6rem; color:var(--muted); margin-top:.4rem; }
 
 /* ── GAME DAY banner (only on game day / live) ── */
@@ -258,7 +257,7 @@ function renderGame(now) {
   const gameDay = dayKey(g.k) === dayKey(now);
   const opp = g.opp.replace(/^@\s*/, "");
   const vs = g.site === "away" ? `@ ${opp}` : `vs ${opp}`;
-  const where = [g.venue, g.city].filter(Boolean).join(" · ") + (g.site === "neutral" ? " · neutral site" : g.site === "home" ? " · home" : "");
+  const where = [g.venue, g.city].filter(Boolean).join(", ") + (g.site === "neutral" ? " · neutral site" : g.site === "home" ? " · home" : " · away");
   const when = g.k.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:TZ})
     + " · " + (g.tba ? "time TBA" : g.k.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ}) + " ET")
     + (g.net ? ` · ${g.net}` : "");
@@ -272,12 +271,12 @@ function renderGame(now) {
       const diff = g.k - now, hh = Math.floor(diff/36e5), mm = Math.floor(diff%36e5/6e4);
       mid = `<div class="score">${diff > 0 ? `${hh}:${pad(mm)}` : "Kickoff"}</div><div class="st">Game day · ${esc(when)}</div>`;
     }
-    big.innerHTML = `<img src="${logo(ND_ID)}" alt="Notre Dame"><div class="mid">${mid}<div class="where">Notre Dame ${esc(vs)} · ${esc(where)}</div></div><img src="${logo(g.oppId)}" alt="">`;
+    big.innerHTML = `<img src="${logo(ND_ID)}" alt="Notre Dame"><div class="mid">${mid}<div class="where">Notre Dame ${esc(vs)} · 📍 ${esc(where)}</div></div><img src="${logo(g.oppId)}" alt="">`;
     return;
   }
   big.classList.remove("on"); line.style.display = "";
   const days = Math.ceil((midnight(g.k) - midnight(now)) / 864e5);
-  line.innerHTML = `<img src="${logo(ND_ID)}" alt=""><img src="${logo(g.oppId)}" alt=""><div class="gl-main"><b>Notre Dame ${esc(vs)}</b><div class="where">${esc(where)}</div></div><div class="gl-when"><div class="cd">${days === 1 ? "Tomorrow" : `${days} days`}</div><div class="wh">${esc(when)}</div></div>`;
+  line.innerHTML = `<img src="${logo(ND_ID)}" alt=""><img src="${logo(g.oppId)}" alt=""><div class="gl-main"><b>Notre Dame ${esc(vs)}</b><div class="wh">${esc(when)}</div><div class="where">📍 ${esc(where)}</div></div><div class="gl-when"><div class="cd">${days === 1 ? "Tomorrow" : `${days} days`}</div></div>`;
 }
 
 function evTime(e) { return e.allDay ? "All day" : shortTime(e.start); }
