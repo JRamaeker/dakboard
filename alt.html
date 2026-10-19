@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dakboard (alt)</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Kitchen board, alternative layout.
+   Nothing has a fixed height. Every size is in rem, and the script picks the
+   largest root font size at which the whole page fits the screen. A busy week
+   shrinks a little, a quiet one gets bigger. Nothing is ever cut to "…". */
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --bg:#07101f; --card:#0d1a30; --line:#1d2c47; --text:#eef2fb; --muted:#8b98b8; --dim:#56627f;
+  --gold:#C99700; --navy:#0C2340; --red:#ff4d6a;
+  --fd:"Bebas Neue",sans-serif; --fb:"DM Sans",sans-serif;
+}
+html { font-size:10px; }   /* replaced by the fit script */
+html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--fb); }
+body.night { filter:brightness(.55); }
+.page { height:100vh; display:flex; flex-direction:column; padding:1.6rem 2rem 1rem; gap:1.4rem; }
+
+/* ── TOP: time, current weather, next game in one band ── */
+.top { display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; }
+.time { font-family:var(--fd); font-size:9rem; line-height:.85; letter-spacing:.1rem; }
+.time small { font-size:.38em; color:var(--gold); margin-left:.6rem; letter-spacing:.2rem; }
+.date { font-size:1.9rem; color:var(--muted); margin-top:.6rem; letter-spacing:.05rem; }
+.date b { color:var(--gold); font-weight:700; }
+.now-wx { text-align:right; min-width:0; }
+.now-wx .t { font-family:var(--fd); font-size:7rem; line-height:.9; white-space:nowrap; }
+.now-wx .t span { font-size:.8em; margin-right:.6rem; }
+.now-wx .d { font-size:1.7rem; color:var(--muted); white-space:nowrap; }
+.game-line { display:flex; align-items:center; gap:1rem; font-size:1.7rem; color:var(--muted); border-top:1px solid var(--line); padding-top:1rem; }
+.game-line img { height:2.6rem; }
+.game-line b { color:var(--gold); font-family:var(--fd); font-size:2.2rem; letter-spacing:.1rem; font-weight:400; }
+.game-line .cd { margin-left:auto; font-family:var(--fd); font-size:2.4rem; color:var(--text); letter-spacing:.1rem; }
+
+/* ── GAME DAY banner (only on game day / live) ── */
+.gameday { display:none; background:linear-gradient(135deg,var(--navy),#163566); border:2px solid var(--gold); border-radius:1.2rem; padding:1.4rem 2rem; align-items:center; gap:2rem; }
+.gameday.on { display:flex; }
+.gameday img { height:6rem; }
+.gameday .mid { flex:1; text-align:center; }
+.gameday .score { font-family:var(--fd); font-size:7rem; line-height:1; }
+.gameday .score .w { color:var(--gold); }
+.gameday .st { font-size:1.8rem; color:var(--muted); letter-spacing:.2rem; text-transform:uppercase; }
+.gameday .live { color:var(--red); font-weight:700; }
+
+/* ── HERO: today (or tomorrow, after 8 PM) ── */
+.hero { background:var(--card); border-radius:1.4rem; padding:1.6rem 2rem; border-left:.6rem solid var(--gold); }
+.hero h2 { font-family:var(--fd); font-weight:400; font-size:3.6rem; letter-spacing:.2rem; color:var(--gold); line-height:1; display:flex; align-items:baseline; gap:1.2rem; }
+.hero h2 span { color:var(--muted); font-size:.55em; letter-spacing:.1rem; }
+.hero ul { list-style:none; margin-top:1rem; display:flex; flex-direction:column; gap:.7rem; }
+.hero li { display:flex; align-items:baseline; gap:1.4rem; font-size:3rem; line-height:1.15; }
+.hero li .tm { font-size:.62em; color:var(--muted); min-width:6.5ch; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; }
+.hero li .dot { width:1.2rem; height:1.2rem; border-radius:50%; flex-shrink:0; align-self:center; }
+.hero li.done { opacity:.35; }
+.hero li.next .ti { color:#fff; font-weight:700; }
+.hero .empty { font-size:2.4rem; color:var(--dim); font-style:italic; margin-top:.8rem; }
+
+/* ── NEXT DAYS: one row per day, rows share the leftover space ── */
+.days { flex:1; min-height:0; display:flex; flex-direction:column; gap:.6rem; }
+.day { flex:1 1 auto; display:grid; grid-template-columns:12rem 1fr; gap:1.6rem; padding:1rem 0; border-top:1px solid var(--line); align-items:start; }
+.day .lbl { display:flex; flex-direction:column; gap:.3rem; }
+.day .dn { font-family:var(--fd); font-size:2.8rem; letter-spacing:.15rem; line-height:1; }
+.day.weekend .dn { color:var(--gold); }
+.day .dd { font-size:1.5rem; color:var(--muted); }
+.day .wx { font-size:1.5rem; color:var(--muted); white-space:nowrap; }
+.day .wx b { color:var(--text); font-weight:500; }
+.evs { display:flex; flex-wrap:wrap; gap:.7rem 1.6rem; align-content:flex-start; }
+.ev { display:flex; align-items:baseline; gap:.7rem; font-size:2.1rem; line-height:1.2; }
+.ev .dot { width:1rem; height:1rem; border-radius:50%; flex-shrink:0; align-self:center; }
+.ev .tm { font-size:.72em; color:var(--muted); }
+.day .none { font-size:1.8rem; color:var(--dim); font-style:italic; }
+
+/* ── COMING UP: beyond the visible days ── */
+.later h3 { font-family:var(--fd); font-weight:400; font-size:2.2rem; letter-spacing:.2rem; color:var(--muted); margin-bottom:.6rem; }
+.later ul { list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:.5rem 2rem; }
+.later li { display:flex; align-items:baseline; gap:.8rem; font-size:1.7rem; min-width:0; }
+.later li .wd { color:var(--gold); font-family:var(--fd); font-size:1.15em; letter-spacing:.1rem; min-width:6.5ch; }
+.later li .dot { width:.9rem; height:.9rem; border-radius:50%; flex-shrink:0; align-self:center; }
+
+/* ── FOOT ── */
+.foot { display:flex; justify-content:space-between; align-items:center; font-size:1.4rem; color:var(--muted); gap:1rem; }
+.legend { display:flex; gap:1.6rem; flex-wrap:wrap; }
+.legend span { display:flex; align-items:center; gap:.5rem; }
+.legend i { width:1rem; height:1rem; border-radius:50%; }
+.sync.err { color:var(--red); }
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <div class="top">
+    <div>
+      <div class="time" id="time">--:--</div>
+      <div class="date" id="date">—</div>
+    </div>
+    <div class="now-wx">
+      <div class="t" id="wx-now">--°</div>
+      <div class="d" id="wx-desc">—</div>
+    </div>
+  </div>
+  <div class="game-line" id="game-line"></div>
+  <div class="gameday" id="gameday"></div>
+  <div class="hero" id="hero"></div>
+  <div class="days" id="days"></div>
+  <div class="later" id="later"></div>
+  <div class="foot"><div class="legend" id="legend"></div><div class="sync" id="sync">Loading…</div></div>
+</div>
+
+<script>
+// ── SETTINGS (same sources as the main board) ──
+const TZ = "America/New_York";
+const WX_LAT = 41.7052, WX_LON = -86.2354;
+const GCAL_API_KEY = "AIzaSyDQeZzDXShJ0qi4bieN6V02lCvCzKqsGkI";
+const CALENDARS = [
+  { id:"d80f4844ae8c2f869f660d6e6078b0f184451702d45fbbd2f3a66692f80c1f50@group.calendar.google.com", name:"Addie",  color:"#ff3366" },
+  { id:"jramaeker@gmail.com",                                                                       name:"Joey",   color:"#C99700" },
+  { id:"a53339bf3b5e37f4057d8f4a42b90ef80e5cad84eae80fabc97eaffc0589ad02@group.calendar.google.com", name:"House",  color:"#7c3aed" },
+  { id:"220e3efc2bf8ebcc0aa3969aa5d6917b7ddddabde6c1e5b01557dc9cf45253b7@group.calendar.google.com", name:"School", color:"#00b8d4" },
+  { id:"c9a812107a0db75640adc93b84b0529027d096a869e96f14a4bdfeee9558c6f5@group.calendar.google.com", name:"Fia",    color:"#e6c700" },
+  { id:"family11371226280449696764@group.calendar.google.com",                                       name:"Family", color:"#00c853" },
+];
+const ND_ID = "87";
+const ND_SCHEDULE = [
+  { kick:"2026-09-06T19:30:00-04:00", opp:"Wisconsin",       oppId:"275",  net:"NBC" },
+  { kick:"2026-09-12T15:30:00-04:00", opp:"Rice",            oppId:"242",  net:"NBC" },
+  { kick:"2026-09-19T19:30:00-04:00", opp:"Michigan State",  oppId:"127",  net:"NBC" },
+  { kick:"2026-09-26T14:00:00-04:00", opp:"@ Purdue",        oppId:"2509", net:"" },
+  { kick:"2026-10-03T12:00:00-04:00", opp:"@ North Carolina",oppId:"153",  net:"" },
+  { kick:"2026-10-10T15:30:00-04:00", opp:"Stanford",        oppId:"24",   net:"NBC" },
+  { kick:"2026-10-17T19:30:00-04:00", opp:"@ BYU",           oppId:"252",  net:"ABC" },
+  { kick:"2026-10-31T12:00:00-04:00", opp:"Navy",            oppId:"2426", net:"ABC/ESPN" },
+  { kick:"2026-11-07T19:30:00-05:00", opp:"Miami",           oppId:"2390", net:"NBC", tba:true },
+  { kick:"2026-11-14T15:30:00-05:00", opp:"Boston College",  oppId:"103",  net:"NBC", tba:true },
+  { kick:"2026-11-21T19:30:00-05:00", opp:"SMU",             oppId:"2567", net:"NBC", tba:true },
+  { kick:"2026-11-28T12:00:00-05:00", opp:"@ Syracuse",      oppId:"183",  net:"",    tba:true },
+];
+const EVENING_HOUR = 20;   // from 8 PM the big list shows tomorrow
+const NIGHT = [22, 6];     // dim between 10 PM and 6 AM
+const NEXT_DAYS = 6;       // rows under the big list
+const LATER_DAYS = 21;     // "Coming up" looks this far past the rows
+
+// ── HELPERS ──
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+const pad = n => String(n).padStart(2,"0");
+const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const shortTime = d => { let h=d.getHours(), m=d.getMinutes(), ap=h>=12?"p":"a"; h=h%12||12; return m ? `${h}:${pad(m)}${ap}` : `${h}${ap}`; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = id => document.getElementById(id);
+
+// ── DATA ──
+let events = [], weather = null, live = null, calOk = true;
+
+async function fetchCal(cal) {
+  const start = midnight(new Date()), end = addDays(start, 1 + NEXT_DAYS + LATER_DAYS + 1);
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
+    + `?key=${GCAL_API_KEY}&timeMin=${start.toISOString()}&timeMax=${end.toISOString()}`
+    + `&singleEvents=true&orderBy=startTime&maxResults=250&timeZone=${encodeURIComponent(TZ)}`;
+  const data = await fetch(url).then(r => r.json());
+  if (!data.items) throw new Error(`${cal.name}: ${data.error?.message || "no items"}`);
+  const out = [];
+  for (const it of data.items) {
+    if (!it.start) continue;
+    const title = it.summary || "(No title)";
+    if (it.start.date) {
+      const [y,m,d] = it.start.date.split("-").map(Number), [y2,m2,d2] = it.end.date.split("-").map(Number);
+      for (let cur = new Date(y,m-1,d), stop = new Date(y2,m2-1,d2); cur < stop; cur.setDate(cur.getDate()+1))
+        out.push({ key:dayKey(cur), start:null, end:null, allDay:true, title, cal });
+    } else {
+      const s = new Date(it.start.dateTime), e = it.end?.dateTime ? new Date(it.end.dateTime) : s;
+      out.push({ key:dayKey(s), start:s, end:e, allDay:false, title, cal });
+    }
+  }
+  return out;
+}
+
+async function loadCalendars() {
+  const results = await Promise.allSettled(CALENDARS.map(fetchCal));
+  const failed = results.filter(r => r.status === "rejected");
+  failed.forEach(f => console.warn(f.reason));
+  const seen = new Set();
+  events = results.filter(r => r.status === "fulfilled").flatMap(r => r.value)
+    .filter(e => { const k = `${e.key}|${e.title.toLowerCase()}|${e.start?.getTime() ?? "all"}`; if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a,b) => a.key.localeCompare(b.key) || (a.allDay===b.allDay ? (a.start?.getTime()||0)-(b.start?.getTime()||0) : a.allDay ? -1 : 1));
+  calOk = failed.length === 0;
+  $("sync").className = "sync" + (calOk ? "" : " err");
+  $("sync").textContent = (calOk ? "Synced " : `${failed.length} calendar${failed.length>1?"s":""} failed · `)
+    + new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+}
+
+const WMO = {0:["☀️","Clear"],1:["🌤️","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Overcast"],45:["🌫️","Fog"],48:["🌫️","Fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Drizzle"],56:["🌧️","Freezing drizzle"],57:["🌧️","Freezing drizzle"],61:["🌧️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],66:["🌧️","Freezing rain"],67:["🌧️","Freezing rain"],71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["❄️","Heavy snow"],77:["🌨️","Snow"],80:["🌦️","Showers"],81:["🌧️","Showers"],82:["⛈️","Heavy showers"],85:["🌨️","Snow showers"],86:["❄️","Snow showers"],95:["⛈️","Thunderstorms"],96:["⛈️","T-storms"],99:["⛈️","T-storms"]};
+const wmo = c => WMO[c] || ["🌡️","—"];
+
+async function loadWeather(retries=6) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}`
+      + `&current=temperature_2m,weather_code,wind_speed_10m`
+      + `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max`
+      + `&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=8&timezone=${encodeURIComponent(TZ)}`;
+    const r = await fetch(url); if (!r.ok) throw new Error("weather " + r.status);
+    const j = await r.json();
+    weather = { now:j.current, days:{} };
+    j.daily.time.forEach((t,i) => weather.days[t] = { hi:Math.round(j.daily.temperature_2m_max[i]), lo:Math.round(j.daily.temperature_2m_min[i]), code:j.daily.weather_code[i], rain:j.daily.precipitation_probability_max[i] ?? 0 });
+    render();
+  } catch(e) {
+    console.error(e);
+    if (retries > 0) setTimeout(() => loadWeather(retries-1), 30000);   // Open-Meteo has brief 503 outages
+  }
+}
+
+// ── NOTRE DAME ──
+const GAME_WINDOW = 4*60*60*1000;
+const logo = id => `https://a.espncdn.com/i/teamlogos/ncaa/500/${id}.png`;
+function nextGame() {
+  const now = Date.now();
+  for (const g of ND_SCHEDULE) { const k = new Date(g.kick); if (k.getTime()+GAME_WINDOW > now) return { ...g, k }; }
+  return null;
+}
+async function pollLive() {
+  const g = nextGame();
+  if (!g || Date.now() < g.k.getTime()) { live = null; return; }
+  try {
+    const ymd = g.k.toLocaleDateString("en-CA",{timeZone:TZ}).replace(/-/g,"");
+    const data = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=${ymd}&groups=80&limit=300`).then(r => r.json());
+    const ev = data.events?.find(e => e.competitions[0].competitors.some(c => c.team.id === ND_ID));
+    if (!ev) return;
+    const comp = ev.competitions[0], st = comp.status;
+    const nd = comp.competitors.find(c => c.team.id === ND_ID), opp = comp.competitors.find(c => c.team.id !== ND_ID);
+    live = { nd:+nd.score||0, opp:+opp.score||0, final:st.type.state==="post", pre:st.type.state==="pre", status:`Q${st.period} ${st.displayClock}` };
+    render();
+  } catch(e) { console.warn("ESPN", e); }
+}
+
+// ── RENDER ──
+function renderTop(now) {
+  let h = now.getHours();
+  $("time").innerHTML = `${h%12||12}:${pad(now.getMinutes())}<small>${h>=12?"PM":"AM"}</small>`;
+  $("date").innerHTML = `<b>${now.toLocaleDateString("en-US",{weekday:"long"})}</b> · ${now.toLocaleDateString("en-US",{month:"long",day:"numeric"})}`;
+  if (weather) {
+    const today = weather.days[dayKey(now)], [ic, desc] = wmo(weather.now.weather_code);
+    $("wx-now").innerHTML = `<span>${ic}</span>${Math.round(weather.now.temperature_2m)}°`;
+    $("wx-desc").textContent = today ? `${desc} · ${today.hi}° / ${today.lo}° · ${today.rain}% rain` : desc;
+  }
+}
+
+function renderGame(now) {
+  const g = nextGame(), line = $("game-line"), big = $("gameday");
+  if (!g) { line.style.display = "none"; big.classList.remove("on"); return; }
+  const gameDay = dayKey(g.k) === dayKey(now);
+  const vs = g.opp.startsWith("@") ? g.opp : `vs ${g.opp}`;
+  const when = g.k.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:TZ})
+    + " · " + (g.tba ? "time TBA" : g.k.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ}) + " ET")
+    + (g.net ? ` · ${g.net}` : "");
+  if (gameDay) {
+    line.style.display = "none"; big.classList.add("on");
+    let mid;
+    if (live && !live.pre) {
+      const w = live.nd >= live.opp;
+      mid = `<div class="score"><span class="${w?"w":""}">${live.nd}</span> – <span class="${w?"":"w"}">${live.opp}</span></div><div class="st">${live.final ? "Final" : `<span class="live">● Live</span> · ${esc(live.status)}`}</div>`;
+    } else {
+      const diff = g.k - now, hh = Math.floor(diff/36e5), mm = Math.floor(diff%36e5/6e4);
+      mid = `<div class="score">${diff > 0 ? `${hh}:${pad(mm)}` : "Kickoff"}</div><div class="st">Game day · ${esc(when)}</div>`;
+    }
+    big.innerHTML = `<img src="${logo(ND_ID)}" alt="Notre Dame"><div class="mid">${mid}</div><img src="${logo(g.oppId)}" alt="">`;
+    return;
+  }
+  big.classList.remove("on"); line.style.display = "";
+  const days = Math.ceil((midnight(g.k) - midnight(now)) / 864e5);
+  line.innerHTML = `<img src="${logo(ND_ID)}" alt=""><b>Notre Dame ${esc(vs)}</b><span>${esc(when)}</span><span class="cd">${days === 1 ? "Tomorrow" : `${days} days`}</span>`;
+}
+
+function evTime(e) { return e.allDay ? "All day" : shortTime(e.start); }
+
+function renderHero(now, map) {
+  const evening = now.getHours() >= EVENING_HOUR;
+  const day = evening ? addDays(now, 1) : now;
+  const evs = map[dayKey(day)] || [];
+  let nextMarked = false;
+  const items = evs.map(e => {
+    const done = !evening && !e.allDay && e.end < now;
+    let cls = done ? "done" : "";
+    if (!done && !e.allDay && !nextMarked) { cls = "next"; nextMarked = true; }
+    return `<li class="${cls}"><span class="tm">${evTime(e)}</span><span class="dot" style="background:${e.cal.color}"></span><span class="ti">${esc(e.title)}</span></li>`;
+  });
+  const left = evs.filter(e => evening || e.allDay || e.end >= now).length;
+  $("hero").innerHTML = `<h2>${evening ? "Tomorrow" : "Today"}<span>${day.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}</span></h2>`
+    + (evs.length ? `<ul>${items.join("")}</ul>` + (left ? "" : `<div class="empty">All done for today</div>`)
+                  : `<div class="empty">Nothing on the calendar</div>`);
+  return day;
+}
+
+function renderDays(heroDay, map) {
+  let html = "";
+  for (let i = 1; i <= NEXT_DAYS; i++) {
+    const d = addDays(heroDay, i), key = dayKey(d), evs = map[key] || [], w = weather?.days[key];
+    const wx = w ? `<div class="wx">${wmo(w.code)[0]} <b>${w.hi}°</b> ${w.lo}°${w.rain >= 30 ? ` · 💧${w.rain}%` : ""}</div>` : "";
+    const body = evs.length
+      ? evs.map(e => `<div class="ev"><span class="dot" style="background:${e.cal.color}"></span>${e.allDay ? "" : `<span class="tm">${shortTime(e.start)}</span>`}<span>${esc(e.title)}</span></div>`).join("")
+      : `<div class="none">—</div>`;
+    const label = i === 1 && heroDay.getTime() === midnight(new Date()).getTime() ? "Tomorrow" : DOW[d.getDay()];
+    html += `<div class="day${d.getDay()%6===0?" weekend":""}"><div class="lbl"><div class="dn">${label}</div><div class="dd">${d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>${wx}</div><div class="evs">${body}</div></div>`;
+  }
+  $("days").innerHTML = html;
+}
+
+function renderLater(heroDay) {
+  const from = dayKey(addDays(heroDay, NEXT_DAYS+1)), to = dayKey(addDays(heroDay, NEXT_DAYS+LATER_DAYS));
+  const soon = new Set(events.filter(e => e.key < from).map(e => e.title.toLowerCase()));
+  const seen = new Set(), picks = [];
+  for (const e of events) {
+    if (e.key < from || e.key > to) continue;
+    const t = e.title.toLowerCase();
+    if (soon.has(t) || seen.has(t)) continue;   // skip routines already on screen, and repeats
+    seen.add(t); picks.push(e);
+  }
+  $("later").innerHTML = picks.length
+    ? `<h3>Coming up</h3><ul>${picks.map(e => { const [y,m,d] = e.key.split("-").map(Number), dt = new Date(y,m-1,d);
+        return `<li><span class="wd">${DOW[dt.getDay()]} ${dt.getMonth()+1}/${dt.getDate()}</span><span class="dot" style="background:${e.cal.color}"></span><span>${esc(e.title)}</span></li>`; }).join("")}</ul>`
+    : "";
+  return picks.length;
+}
+
+function render() {
+  const now = new Date(), map = {};
+  events.forEach(e => (map[e.key] ||= []).push(e));
+  document.body.classList.toggle("night", now.getHours() >= NIGHT[0] || now.getHours() < NIGHT[1]);
+  renderTop(now); renderGame(now);
+  const heroDay = midnight(renderHero(now, map));
+  renderDays(heroDay, map);
+  renderLater(heroDay);
+  fit();
+}
+
+// ── FIT: largest text size that shows everything ──
+// The page is a column of natural-height blocks plus the day rows, which share
+// what's left. Binary-search the root font size until nothing overflows.
+// "Coming up" drops items from the end before the text gets too small.
+function overflows() {
+  const page = $("page"), days = $("days");
+  return page.scrollHeight > window.innerHeight + 1 || days.scrollHeight > days.clientHeight + 1
+      || [...document.querySelectorAll(".evs, .hero, .top")].some(el => el.scrollWidth > el.clientWidth + 1);
+}
+function fitSize() {
+  let lo = 5, hi = window.innerHeight / 90;   // px per rem
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) / 2;
+    document.documentElement.style.fontSize = mid + "px";
+    if (overflows()) hi = mid; else lo = mid;
+  }
+  document.documentElement.style.fontSize = lo + "px";
+  return lo;
+}
+function fit() {
+  const MIN_READABLE = window.innerHeight / 210;   // below this, trim "Coming up" first
+  let size = fitSize();
+  const items = () => document.querySelectorAll(".later li");
+  while (size < MIN_READABLE && items().length) {
+    const list = items(); list[list.length-1].remove();
+    if (!items().length) $("later").innerHTML = "";
+    size = fitSize();
+  }
+}
+
+function buildLegend() {
+  $("legend").innerHTML = CALENDARS.map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join("");
+}
+
+// ── START ──
+buildLegend();
+let lastDay = dayKey(new Date()), lastMin = -1;
+async function refreshCalendar() { try { await loadCalendars(); } catch(e) { console.error(e); } render(); }
+render(); refreshCalendar(); loadWeather(); pollLive();
+setInterval(() => {
+  const now = new Date();
+  if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); render(); }   // a re-render per minute keeps "next" and the countdown current
+  if (dayKey(now) !== lastDay) { lastDay = dayKey(now); refreshCalendar(); loadWeather(); }
+}, 1000);
+setInterval(refreshCalendar, 15*60*1000);
+setInterval(loadWeather, 15*60*1000);
+setInterval(pollLive, 30*1000);
+window.addEventListener("resize", fit);
+document.fonts?.ready.then(fit);
+</script>
+</body>
+</html>
