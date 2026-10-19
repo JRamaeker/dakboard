@@ -33,10 +33,10 @@ body.night { filter:brightness(.55); }
 .now-wx .d { font-size:1.7rem; color:var(--muted); white-space:nowrap; }
 .game-line { display:flex; align-items:center; gap:1.4rem; white-space:nowrap; color:var(--muted); border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:1rem 0; }
 .game-line img { height:4.4rem; }
-.game-line .gl-main { min-width:0; }
+.game-line .gl-main { flex:1; min-width:0; }
 .game-line b { display:block; color:var(--gold); font-family:var(--fd); font-size:2.6rem; letter-spacing:.1rem; font-weight:400; line-height:1.05; }
-.game-line .where { font-size:1.6rem; }
-.game-line .gl-when { margin-left:auto; text-align:right; }
+.game-line .where { font-size:1.6rem; white-space:normal; }
+.game-line .gl-when { margin-left:auto; text-align:right; flex-shrink:0; }
 .game-line .cd { font-family:var(--fd); font-size:2.8rem; color:var(--text); letter-spacing:.1rem; line-height:1.05; }
 .game-line .wh { font-size:1.6rem; }
 .gameday .where { font-size:1.6rem; color:var(--muted); margin-top:.4rem; }
@@ -350,7 +350,7 @@ function render() {
 function overflows() {
   const page = $("page"), days = $("days");
   return page.scrollHeight > window.innerHeight + 1 || days.scrollHeight > days.clientHeight + 1
-      || [...document.querySelectorAll(".evs, .hero, .top, .game-line")].some(el => el.scrollWidth > el.clientWidth + 1);
+      || [...document.querySelectorAll(".evs, .hero, .top, .game-line, .gl-main")].some(el => el.scrollWidth > el.clientWidth + 1);
 }
 function fitSize() {
   let lo = 5, hi = window.innerHeight / 90;   // px per rem
