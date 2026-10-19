@@ -329,7 +329,7 @@ async function refreshCalendar() {
 const WMO_ICON = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",56:"🌧️",57:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",66:"🌧️",67:"🌧️",71:"🌨️",73:"🌨️",75:"❄️",77:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",85:"🌨️",86:"❄️",95:"⛈️",96:"⛈️",99:"⛈️"};
 const WMO_DESC = {0:"Clear",1:"Mostly Clear",2:"Partly Cloudy",3:"Overcast",45:"Fog",48:"Fog",51:"Light Drizzle",53:"Drizzle",55:"Heavy Drizzle",56:"Freezing Drizzle",57:"Freezing Drizzle",61:"Light Rain",63:"Rain",65:"Heavy Rain",66:"Freezing Rain",67:"Freezing Rain",71:"Light Snow",73:"Snow",75:"Heavy Snow",77:"Snow Grains",80:"Showers",81:"Showers",82:"Heavy Showers",85:"Snow Showers",86:"Heavy Snow Showers",95:"Thunderstorms",96:"T-Storms & Hail",99:"T-Storms & Hail"};
 
-async function loadWeather(retries=3) {
+async function loadWeather(retries=6) {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}`
       + `&current=temperature_2m,weather_code,wind_speed_10m`
@@ -348,7 +348,7 @@ async function loadWeather(retries=3) {
     }).join("");
   } catch(e) {
     console.error(e);
-    if (retries > 0) setTimeout(() => loadWeather(retries-1), 5000);
+    if (retries > 0) setTimeout(() => loadWeather(retries-1), 30000);  // Open-Meteo has brief 503 outages; keep trying for ~3 min
   }
 }
 
@@ -385,7 +385,7 @@ function renderND() {
   }
   const when = g.k.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:TZ})
     + " · " + (g.tba ? "Time TBA" : g.k.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ}) + " ET");
-  const details = [when, g.net, g.venue].filter(Boolean).join(" · ");
+  const details = [when, g.net].filter(Boolean).join(" · ");
   panel.innerHTML = `<div class="nd-logos"><img src="${logo(ND_ID)}" alt="Notre Dame"><div class="nd-vs">VS</div><img src="${logo(g.oppId)}" alt=""></div>
     <div class="nd-info"><div class="nd-matchup"><em>NOTRE DAME</em> ${g.opp.startsWith("@") ? "" : "VS "}${esc(g.opp.toUpperCase())}</div><div class="nd-details">${esc(details)}</div></div>
     <div class="nd-count"><div class="nd-count-label">${label}</div><div class="nd-count-val${gameDay?" game-day":""}">${g.tba && !gameDay ? `${Math.ceil(diff/864e5)} DAYS` : val}</div></div>`;
