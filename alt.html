@@ -31,7 +31,7 @@ body.night { filter:brightness(.55); }
 .now-wx .t { font-family:var(--fd); font-size:7rem; line-height:.9; white-space:nowrap; }
 .now-wx .t span { font-size:.8em; margin-right:.6rem; }
 .now-wx .d { font-size:1.7rem; color:var(--muted); white-space:nowrap; }
-.game-line { display:flex; align-items:center; gap:1rem; font-size:1.7rem; color:var(--muted); border-top:1px solid var(--line); padding-top:1rem; }
+.game-line { display:flex; align-items:center; gap:1rem; white-space:nowrap; font-size:1.7rem; color:var(--muted); border-top:1px solid var(--line); padding-top:1rem; }
 .game-line img { height:2.6rem; }
 .game-line b { color:var(--gold); font-family:var(--fd); font-size:2.2rem; letter-spacing:.1rem; font-weight:400; }
 .game-line .cd { margin-left:auto; font-family:var(--fd); font-size:2.4rem; color:var(--text); letter-spacing:.1rem; }
@@ -60,12 +60,12 @@ body.night { filter:brightness(.55); }
 
 /* ── NEXT DAYS: one row per day, rows share the leftover space ── */
 .days { flex:1; min-height:0; display:flex; flex-direction:column; gap:.6rem; }
-.day { flex:1 1 auto; display:grid; grid-template-columns:12rem 1fr; gap:1.6rem; padding:1rem 0; border-top:1px solid var(--line); align-items:start; }
-.day .lbl { display:flex; flex-direction:column; gap:.3rem; }
+.day { flex:1 1 auto; display:grid; grid-template-columns:12rem 1fr auto; gap:1.6rem; padding:1rem 0; border-top:1px solid var(--line); align-items:start; }
+.day .lbl { display:flex; flex-direction:column; gap:.2rem; }
 .day .dn { font-family:var(--fd); font-size:2.8rem; letter-spacing:.15rem; line-height:1; }
 .day.weekend .dn { color:var(--gold); }
 .day .dd { font-size:1.5rem; color:var(--muted); }
-.day .wx { font-size:1.5rem; color:var(--muted); white-space:nowrap; }
+.day .wx { font-size:1.7rem; color:var(--muted); white-space:nowrap; text-align:right; padding-top:.3rem; }
 .day .wx b { color:var(--text); font-weight:500; }
 .evs { display:flex; flex-wrap:wrap; gap:.7rem 1.6rem; align-content:flex-start; }
 .ev { display:flex; align-items:baseline; gap:.7rem; font-size:2.1rem; line-height:1.2; }
@@ -77,7 +77,7 @@ body.night { filter:brightness(.55); }
 .later h3 { font-family:var(--fd); font-weight:400; font-size:2.2rem; letter-spacing:.2rem; color:var(--muted); margin-bottom:.6rem; }
 .later ul { list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:.5rem 2rem; }
 .later li { display:flex; align-items:baseline; gap:.8rem; font-size:1.7rem; min-width:0; }
-.later li .wd { color:var(--gold); font-family:var(--fd); font-size:1.15em; letter-spacing:.1rem; min-width:6.5ch; }
+.later li .wd { color:var(--gold); font-family:var(--fd); font-size:1.15em; letter-spacing:.1rem; min-width:6.5ch; white-space:nowrap; }
 .later li .dot { width:.9rem; height:.9rem; border-radius:50%; flex-shrink:0; align-self:center; }
 
 /* ── FOOT ── */
@@ -297,12 +297,12 @@ function renderDays(heroDay, map) {
   let html = "";
   for (let i = 1; i <= NEXT_DAYS; i++) {
     const d = addDays(heroDay, i), key = dayKey(d), evs = map[key] || [], w = weather?.days[key];
-    const wx = w ? `<div class="wx">${wmo(w.code)[0]} <b>${w.hi}°</b> ${w.lo}°${w.rain >= 30 ? ` · 💧${w.rain}%` : ""}</div>` : "";
+    const wx = w ? `<div class="wx">${w.rain >= 30 ? `💧${w.rain}% ` : ""}${wmo(w.code)[0]} <b>${w.hi}°</b> ${w.lo}°</div>` : `<div class="wx"></div>`;
     const body = evs.length
       ? evs.map(e => `<div class="ev"><span class="dot" style="background:${e.cal.color}"></span>${e.allDay ? "" : `<span class="tm">${shortTime(e.start)}</span>`}<span>${esc(e.title)}</span></div>`).join("")
       : `<div class="none">—</div>`;
     const label = i === 1 && heroDay.getTime() === midnight(new Date()).getTime() ? "Tomorrow" : DOW[d.getDay()];
-    html += `<div class="day${d.getDay()%6===0?" weekend":""}"><div class="lbl"><div class="dn">${label}</div><div class="dd">${d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div>${wx}</div><div class="evs">${body}</div></div>`;
+    html += `<div class="day${d.getDay()%6===0?" weekend":""}"><div class="lbl"><div class="dn">${label}</div><div class="dd">${d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div></div><div class="evs">${body}</div>${wx}</div>`;
   }
   $("days").innerHTML = html;
 }
@@ -343,7 +343,7 @@ function render() {
 function overflows() {
   const page = $("page"), days = $("days");
   return page.scrollHeight > window.innerHeight + 1 || days.scrollHeight > days.clientHeight + 1
-      || [...document.querySelectorAll(".evs, .hero, .top")].some(el => el.scrollWidth > el.clientWidth + 1);
+      || [...document.querySelectorAll(".evs, .hero, .top, .game-line")].some(el => el.scrollWidth > el.clientWidth + 1);
 }
 function fitSize() {
   let lo = 5, hi = window.innerHeight / 90;   // px per rem
