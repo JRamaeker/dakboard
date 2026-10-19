@@ -53,7 +53,7 @@ body.night { filter:brightness(.55); }
 .hero ul { list-style:none; margin-top:1rem; display:flex; flex-direction:column; gap:.7rem; }
 .hero li { display:flex; align-items:baseline; gap:1.4rem; font-size:3rem; line-height:1.15; }
 .hero li .tm { font-size:.62em; color:var(--muted); min-width:6.5ch; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; }
-.hero li .dot { width:1.2rem; height:1.2rem; border-radius:50%; flex-shrink:0; align-self:center; }
+.hero li .dot { width:1.2rem; height:1.2rem; border-radius:50%; flex-shrink:0; align-self:flex-start; margin-top:.5em; }
 .hero li.done { opacity:.35; }
 .hero li.next .ti { color:#fff; font-weight:700; }
 .hero .empty { font-size:2.4rem; color:var(--dim); font-style:italic; margin-top:.8rem; }
@@ -69,7 +69,7 @@ body.night { filter:brightness(.55); }
 .day .wx b { color:var(--text); font-weight:500; }
 .evs { display:flex; flex-wrap:wrap; gap:.7rem 1.6rem; align-content:flex-start; }
 .ev { display:flex; align-items:baseline; gap:.7rem; font-size:2.1rem; line-height:1.2; }
-.ev .dot { width:1rem; height:1rem; border-radius:50%; flex-shrink:0; align-self:center; }
+.ev .dot { width:1rem; height:1rem; border-radius:50%; flex-shrink:0; align-self:flex-start; margin-top:.45em; }
 .ev .tm { font-size:.72em; color:var(--muted); }
 .day .none { font-size:1.8rem; color:var(--dim); font-style:italic; }
 
@@ -78,7 +78,7 @@ body.night { filter:brightness(.55); }
 .later ul { list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:.5rem 2rem; }
 .later li { display:flex; align-items:baseline; gap:.8rem; font-size:1.7rem; min-width:0; }
 .later li .wd { color:var(--gold); font-family:var(--fd); font-size:1.15em; letter-spacing:.1rem; min-width:6.5ch; white-space:nowrap; }
-.later li .dot { width:.9rem; height:.9rem; border-radius:50%; flex-shrink:0; align-self:center; }
+.later li .dot { width:.9rem; height:.9rem; border-radius:50%; flex-shrink:0; align-self:flex-start; margin-top:.45em; }
 
 /* ── FOOT ── */
 .foot { display:flex; justify-content:space-between; align-items:center; font-size:1.4rem; color:var(--muted); gap:1rem; }
