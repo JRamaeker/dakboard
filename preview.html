@@ -2,173 +2,121 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dakboard (preview)</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-/* Portrait kitchen board. Rows add up to exactly 100vh.
-   Sizes are in vh (the long side) and capped with vw where text runs horizontally,
-   so nothing gets clipped on a tall, narrow screen. */
+/* Kitchen board, alternative layout.
+   Nothing has a fixed height. Every size is in rem, and the script picks the
+   largest root font size at which the whole page fits the screen. A busy week
+   shrinks a little, a quiet one gets bigger. Nothing is ever cut to "…". */
 * { margin:0; padding:0; box-sizing:border-box; }
-
 :root {
-  --bg:#080810; --surface:#10101c; --surface2:#181828; --border:#26263c;
-  --nd-gold:#C99700; --nd-navy:#0C2340;
-  --red:#ff1744; --green:#00e676;
-  --cream:#f5f0e8; --muted:#8a8ab8; --dim:#4a4a6a; --text:#eeeeff;
-  --fd:"Bebas Neue",sans-serif; --fb:"DM Sans",sans-serif; --fm:"Space Mono",monospace;
-
-  --h-header:10vh; --h-fc:6vh; --h-cal:59vh; --h-agenda:15vh; --h-nd:6vh; --h-status:4vh;
+  --bg:#07101f; --card:#0d1a30; --line:#1d2c47; --text:#eef2fb; --muted:#8b98b8; --dim:#56627f;
+  --gold:#C99700; --navy:#0C2340; --red:#ff4d6a;
+  --fd:"Bebas Neue",sans-serif; --fb:"DM Sans",sans-serif;
 }
-
+html { font-size:10px; }   /* replaced by the fit script */
 html, body { width:100vw; height:100vh; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--fb); }
-.dashboard { width:100vw; height:100vh; display:flex; flex-direction:column; overflow:hidden; }
-.dashboard > * { flex-shrink:0; overflow:hidden; }
+body.night { filter:brightness(.55); }
+.page { height:100vh; display:flex; flex-direction:column; padding:1.6rem 2rem 1rem; gap:1.4rem; }
 
-/* ── HEADER: clock | current weather ── */
-.header { height:var(--h-header); display:flex; background:linear-gradient(135deg,#0C2340,#142a4a); border-bottom:3px solid var(--nd-gold); }
-.clock-block { flex:1 1 44%; padding:0 3vw; display:flex; flex-direction:column; justify-content:center; min-width:0; }
-.date-line { display:flex; gap:2vw; align-items:baseline; white-space:nowrap; }
-.dayname { font-family:var(--fd); font-size:min(3vh,6vw); letter-spacing:3px; color:var(--nd-gold); line-height:1; }
-.datefull { font-size:min(1.6vh,3.2vw); color:rgba(255,255,255,.6); letter-spacing:1px; text-transform:uppercase; }
-.clock { font-family:var(--fd); font-size:min(6vh,13vw); line-height:1; color:#fff; white-space:nowrap; }
-.clock .ampm { font-size:.4em; color:var(--nd-gold); margin-left:.4vw; letter-spacing:2px; }
+/* ── TOP: time, current weather, next game in one band ── */
+.top { display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; }
+.time { font-family:var(--fd); font-size:9rem; line-height:.85; letter-spacing:.1rem; }
+.time small { font-size:.38em; color:var(--gold); margin-left:.6rem; letter-spacing:.2rem; }
+.date { font-size:1.9rem; color:var(--muted); margin-top:.6rem; letter-spacing:.05rem; }
+.date b { color:var(--gold); font-weight:700; }
+.now-wx { text-align:right; min-width:0; }
+.now-wx .t { font-family:var(--fd); font-size:7rem; line-height:.9; white-space:nowrap; }
+.now-wx .t span { font-size:.8em; margin-right:.6rem; }
+.now-wx .d { font-size:1.7rem; color:var(--muted); white-space:nowrap; }
+.game-line { display:flex; align-items:center; gap:1.4rem; white-space:nowrap; color:var(--muted); border-top:1px solid var(--line); border-bottom:1px solid var(--line); padding:1rem 0; }
+.game-line img { height:4.4rem; }
+.game-line .gl-main { flex:1; min-width:0; }
+.game-line b { display:block; color:var(--gold); font-family:var(--fd); font-size:2.6rem; letter-spacing:.1rem; font-weight:400; line-height:1.05; }
+.game-line .where, .game-line .wh { font-size:1.6rem; overflow:hidden; }
+.game-line .gl-when { margin-left:auto; text-align:right; flex-shrink:0; }
+.game-line .cd { font-family:var(--fd); font-size:2.8rem; color:var(--text); letter-spacing:.1rem; line-height:1.05; }
+.gameday .where { font-size:1.6rem; color:var(--muted); margin-top:.4rem; }
 
-.wx-now { flex:1 1 56%; padding:0 3vw 0 2vw; display:flex; align-items:center; justify-content:flex-end; gap:1.8vw; min-width:0; border-left:1px solid rgba(201,151,0,.35); }
-.wx-icon { font-size:min(4.4vh,9vw); line-height:1; }
-.wx-temp { font-family:var(--fd); font-size:min(6vh,12vw); color:var(--cream); line-height:1; white-space:nowrap; }
-.wx-temp sup { font-size:.4em; vertical-align:top; }
-.wx-meta { display:flex; flex-direction:column; gap:.4vh; min-width:0; flex-shrink:1; overflow:hidden; }
-.wx-desc { font-size:min(1.7vh,3.4vw); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.wx-hilo { font-family:var(--fm); font-size:min(1.5vh,3vw); color:var(--cream); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.wx-mini { font-size:min(1.3vh,2.6vw); color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* ── GAME DAY banner (only on game day / live) ── */
+.gameday { display:none; background:linear-gradient(135deg,var(--navy),#163566); border:2px solid var(--gold); border-radius:1.2rem; padding:1.4rem 2rem; align-items:center; gap:2rem; }
+.gameday.on { display:flex; }
+.gameday img { height:6rem; }
+.gameday .mid { flex:1; text-align:center; }
+.gameday .score { font-family:var(--fd); font-size:7rem; line-height:1; }
+.gameday .score .w { color:var(--gold); }
+.gameday .st { font-size:1.8rem; color:var(--muted); letter-spacing:.2rem; text-transform:uppercase; }
+.gameday .live { color:var(--red); font-weight:700; }
 
-/* ── 5-DAY FORECAST (full width) ── */
-.forecast { height:var(--h-fc); display:grid; grid-template-columns:repeat(5,1fr); background:var(--surface); border-bottom:1px solid var(--border); }
-.fc-day { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.3vh; border-right:1px solid var(--border); white-space:nowrap; min-width:0; }
-.fc-row { display:flex; align-items:center; gap:1.2vw; }
-.fc-day:last-child { border-right:none; }
-.fc-label { font-family:var(--fd); font-size:min(1.9vh,3.8vw); letter-spacing:2px; color:var(--muted); }
-.fc-day.today .fc-label { color:var(--nd-gold); }
-.fc-icon { font-size:min(2.4vh,4.8vw); }
-.fc-temps { display:flex; align-items:baseline; gap:.8vw; line-height:1.1; }
-.fc-hi { font-family:var(--fm); font-size:min(1.6vh,3.2vw); color:var(--cream); }
-.fc-lo { font-family:var(--fm); font-size:min(1.2vh,2.4vw); color:var(--muted); }
-.fc-precip { font-size:min(1.2vh,2.4vw); color:var(--muted); }
+/* ── HERO: today (or tomorrow, after 8 PM) ── */
+.hero { background:var(--card); border-radius:1.4rem; padding:1.6rem 2rem; border-left:.6rem solid var(--gold); }
+.hero h2 { font-family:var(--fd); font-weight:400; font-size:3.6rem; letter-spacing:.2rem; color:var(--gold); line-height:1; display:flex; align-items:baseline; gap:1.2rem; }
+.hero h2 span { color:var(--muted); font-size:.55em; letter-spacing:.1rem; }
+.hero ul { list-style:none; margin-top:1rem; display:flex; flex-direction:column; gap:.7rem; }
+.hero li { display:flex; align-items:baseline; gap:1.4rem; font-size:3rem; line-height:1.15; }
+.hero li .tm { font-size:.62em; color:var(--muted); min-width:6.5ch; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; }
+.hero li .dot { width:1.2rem; height:1.2rem; border-radius:50%; flex-shrink:0; align-self:flex-start; margin-top:.5em; }
+.hero li.done { opacity:.35; }
+.hero li.next .ti { color:#fff; font-weight:700; }
+.hero .empty { font-size:2.4rem; color:var(--dim); font-style:italic; margin-top:.8rem; }
 
-/* ── ND PANEL ── */
-.nd-panel { height:var(--h-nd); background:linear-gradient(135deg,#0a1e38,#0C2340 60%,#0a1e38); border-top:1px solid rgba(201,151,0,.3); display:flex; align-items:center; padding:0 3vw; gap:3vw; }
-.nd-logos { display:flex; align-items:center; gap:1.5vw; flex-shrink:0; }
-.nd-logos img { height:3.8vh; width:auto; filter:drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
-.nd-vs { font-family:var(--fd); font-size:1.6vh; color:var(--muted); letter-spacing:2px; }
-.nd-info { flex:1; min-width:0; }
-.nd-matchup { font-family:var(--fd); font-size:min(2.2vh,4.4vw); letter-spacing:2px; line-height:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.nd-matchup em { color:var(--nd-gold); font-style:normal; }
-.nd-details { font-size:min(1.3vh,2.6vw); color:rgba(255,255,255,.6); text-transform:uppercase; letter-spacing:.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:.4vh; }
-.nd-count { text-align:right; flex-shrink:0; }
-.nd-count-label { font-size:1.1vh; letter-spacing:3px; color:var(--nd-gold); text-transform:uppercase; }
-.nd-count-val { font-family:var(--fd); font-size:min(3.2vh,6.4vw); letter-spacing:2px; line-height:1; }
-.nd-count-val.game-day { color:var(--nd-gold); }
-.nd-score { display:flex; align-items:center; gap:2.5vw; flex:1; justify-content:center; }
-.nd-score-num { font-family:var(--fd); font-size:4.2vh; line-height:1; }
-.nd-score-num.win { color:var(--nd-gold); } .nd-score-num.lose { color:var(--muted); }
-.nd-live { font-size:1.1vh; font-weight:700; letter-spacing:2px; color:var(--red); border:1px solid rgba(255,23,68,.5); border-radius:20px; padding:.3vh 1.2vw; }
-.nd-status { font-family:var(--fd); font-size:2.6vh; color:var(--nd-gold); letter-spacing:2px; text-align:right; }
+/* ── NEXT DAYS: one row per day, rows share the leftover space ── */
+.days { flex:1; min-height:0; display:flex; flex-direction:column; gap:.6rem; }
+.day { flex:1 1 auto; display:grid; grid-template-columns:12rem 1fr auto; gap:1.6rem; padding:1rem 0; border-top:1px solid var(--line); align-items:start; }
+.day .lbl { display:flex; flex-direction:column; gap:.2rem; }
+.day .dn { font-family:var(--fd); font-size:2.8rem; letter-spacing:.15rem; line-height:1; }
+.day.weekend .dn { color:var(--gold); }
+.day .dd { font-size:1.5rem; color:var(--muted); }
+.day .wx { font-size:1.7rem; color:var(--muted); white-space:nowrap; text-align:right; padding-top:.3rem; }
+.day .wx b { color:var(--text); font-weight:500; }
+.evs { display:flex; flex-wrap:wrap; gap:.7rem 1.6rem; align-content:flex-start; }
+.ev { display:flex; align-items:baseline; gap:.7rem; font-size:2.1rem; line-height:1.2; }
+.ev .dot { width:1rem; height:1rem; border-radius:50%; flex-shrink:0; align-self:flex-start; margin-top:.45em; }
+.ev .tm { font-size:.72em; color:var(--muted); }
+.day .none { font-size:1.8rem; color:var(--dim); font-style:italic; }
 
-/* ── MONTH CALENDAR ── */
-.cal { height:var(--h-cal); background:var(--surface); border-bottom:3px solid var(--nd-gold); display:flex; flex-direction:column; padding:.8vh 1.2vw .8vh; }
-.cal-head { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:.6vh; }
-.cal-month { font-family:var(--fd); font-size:min(3.6vh,7.2vw); letter-spacing:4px; line-height:1; }
-.cal-month em { color:var(--nd-gold); font-style:normal; }
-.cal-week { font-family:var(--fm); font-size:1.3vh; color:var(--muted); border:1px solid var(--border); padding:.3vh 1vw; border-radius:4px; }
-.cal-dow-row, .cal-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; }
-.cal-dow { text-align:center; font-size:min(1.3vh,2.6vw); letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-weight:500; padding-bottom:.3vh; }
-.cal-dow.today-col { color:var(--nd-gold); }
-.cal-grid { flex:1; min-height:0; grid-auto-rows:minmax(0,1fr); }
-.cal-day { background:var(--surface2); border-radius:6px; padding:.4vh .5vw; display:flex; flex-direction:column; gap:2px; min-height:0; overflow:hidden; }
-.cal-day.other { background:transparent; }
-.cal-day.other .day-num { color:var(--dim); }
-.cal-day.past { opacity:.45; }
-.cal-day.today { background:rgba(201,151,0,.16); outline:2px solid var(--nd-gold); outline-offset:-2px; }
-.day-num { font-family:var(--fm); font-size:min(1.4vh,2.8vw); text-align:right; line-height:1.1; }
-.day-num .mo { color:var(--nd-gold); margin-right:.4em; }
-.cal-day.today .day-num { color:var(--nd-gold); font-weight:700; }
-.pill { font-size:min(1.3vh,2.6vw); font-weight:600; line-height:1.25; padding:1px 4px; border-radius:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; border-left:3px solid; flex-shrink:0; }
-.pill.wrap { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-.pill .t { font-weight:400; opacity:.8; margin-right:3px; }
-.more { font-size:min(1.15vh,2.3vw); color:var(--muted); padding-left:4px; }
+/* ── COMING UP: beyond the visible days ── */
+.later h3 { font-family:var(--fd); font-weight:400; font-size:2.2rem; letter-spacing:.2rem; color:var(--muted); margin-bottom:.6rem; }
+.later ul { list-style:none; display:grid; grid-template-columns:1fr 1fr; gap:.5rem 2rem; }
+.later li { display:flex; align-items:baseline; gap:.8rem; font-size:1.7rem; min-width:0; }
+.later li .wd { color:var(--gold); font-family:var(--fd); font-size:1.15em; letter-spacing:.1rem; min-width:6.5ch; white-space:nowrap; flex-shrink:0; }
+.later li .dot { width:.9rem; height:.9rem; border-radius:50%; flex-shrink:0; align-self:flex-start; margin-top:.45em; }
 
-/* ── AGENDA (next 5 days) ── */
-.agenda { height:var(--h-agenda); background:var(--surface2); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
-.ag-col { border-right:1px solid var(--border); display:flex; flex-direction:column; min-width:0; min-height:0; }
-.ag-col:last-child { border-right:none; }
-.ag-head { padding:.5vh 1.5vw; border-bottom:1px solid var(--border); display:flex; align-items:baseline; gap:1.2vw; }
-.ag-head.today { background:linear-gradient(135deg,rgba(201,151,0,.2),transparent); border-bottom-color:var(--nd-gold); }
-.ag-dow { font-family:var(--fd); font-size:min(1.9vh,3.8vw); letter-spacing:2px; color:var(--muted); }
-.ag-num { font-family:var(--fd); font-size:min(2.6vh,5.2vw); line-height:1; }
-.ag-head.today .ag-dow, .ag-head.today .ag-num { color:var(--nd-gold); }
-.ag-events { flex:1; padding:.6vh 1.5vw; display:flex; flex-direction:column; gap:.5vh; overflow:hidden; min-height:0; }
-.chip { display:flex; gap:.8vw; min-width:0; align-items:stretch; flex-shrink:0; }
-.chip-bar { width:3px; border-radius:2px; flex-shrink:0; }
-.chip-body { min-width:0; display:flex; align-items:baseline; gap:1vw; }
-.chip-time { font-family:var(--fm); font-size:min(1.15vh,2.3vw); color:var(--muted); flex-shrink:0; min-width:5ch; }
-.chip-title { font-size:min(1.4vh,2.8vw); font-weight:500; line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
-.ag-more { font-size:min(1.1vh,2.2vw); color:var(--muted); }
-.no-ev { font-size:min(1.2vh,2.4vw); color:var(--dim); font-style:italic; }
-
-/* ── STATUS + LEGEND ── */
-.status { height:var(--h-status); background:var(--nd-navy); border-top:3px solid var(--nd-gold); display:flex; align-items:center; justify-content:space-between; padding:0 3vw; gap:2vw; }
-.legend { display:flex; gap:2vw; flex-wrap:nowrap; overflow:hidden; }
-.legend span { display:flex; align-items:center; gap:.6vw; font-size:min(1.3vh,2.6vw); color:rgba(255,255,255,.8); white-space:nowrap; }
-.legend i { width:1.1vh; height:1.1vh; border-radius:50%; display:inline-block; }
-.updated { font-size:min(1.2vh,2.4vw); color:rgba(255,255,255,.55); white-space:nowrap; display:flex; align-items:center; gap:.8vw; }
-.dot { width:8px; height:8px; border-radius:50%; background:var(--green); }
-.dot.err { background:var(--red); }
+/* ── FOOT ── */
+.foot { display:flex; justify-content:space-between; align-items:center; font-size:1.4rem; color:var(--muted); gap:1rem; }
+.legend { display:flex; gap:1.6rem; flex-wrap:wrap; }
+.legend span { display:flex; align-items:center; gap:.5rem; }
+.legend i { width:1rem; height:1rem; border-radius:50%; }
+.sync.err { color:var(--red); }
 </style>
 </head>
 <body>
-<div class="dashboard">
-
-  <div class="header">
-    <div class="clock-block">
-      <div class="date-line"><div class="dayname" id="dayname">—</div><div class="datefull" id="datefull">—</div></div>
-      <div class="clock"><span id="hhmm">--:--</span><span class="ampm" id="ampm"></span></div>
+<div class="page" id="page">
+  <div class="top">
+    <div>
+      <div class="time" id="time">--:--</div>
+      <div class="date" id="date">—</div>
     </div>
-    <div class="wx-now">
-      <div class="wx-icon" id="wx-icon">⛅</div>
-      <div class="wx-temp"><span id="wx-temp">--</span><sup>°</sup></div>
-      <div class="wx-meta">
-        <div class="wx-desc" id="wx-desc">—</div>
-        <div class="wx-hilo" id="wx-hilo">↑--° ↓--°</div>
-        <div class="wx-mini" id="wx-mini">💧--% · 💨-- mph</div>
-      </div>
+    <div class="now-wx">
+      <div class="t" id="wx-now">--°</div>
+      <div class="d" id="wx-desc">—</div>
     </div>
   </div>
-
-  <div class="forecast" id="forecast"></div>
-  <div class="cal">
-    <div class="cal-head"><div class="cal-month" id="cal-month">—</div><div class="cal-week" id="cal-week">WEEK --</div></div>
-    <div class="cal-dow-row" id="cal-dow"></div>
-    <div class="cal-grid" id="cal-grid"></div>
-  </div>
-
-  <div class="agenda" id="agenda"></div>
-
-  <div class="nd-panel" id="nd-panel"></div>
-
-  <div class="status">
-    <div class="legend" id="legend"></div>
-    <div class="updated"><span style="color:var(--nd-gold);letter-spacing:2px">PREVIEW</span><span class="dot" id="sync-dot"></span><span id="updated">Loading…</span></div>
-  </div>
+  <div class="hero" id="hero"></div>
+  <div class="days" id="days"></div>
+  <div class="later" id="later"></div>
+  <div class="game-line" id="game-line"></div>
+  <div class="gameday" id="gameday"></div>
+  <div class="foot"><div class="legend" id="legend"></div><div class="sync" id="sync">Loading…</div></div>
 </div>
 
 <script>
-// ── SETTINGS ──
-const TZ = "America/New_York";            // South Bend is Eastern
-const WX_LAT = 41.7052, WX_LON = -86.2354; // Notre Dame, IN
+// ── SETTINGS (same sources as the main board) ──
+const TZ = "America/New_York";
+const WX_LAT = 41.7052, WX_LON = -86.2354;
 const GCAL_API_KEY = "AIzaSyDQeZzDXShJ0qi4bieN6V02lCvCzKqsGkI";
-
-// name shows in the legend; order and colors match the old board
 const CALENDARS = [
   { id:"d80f4844ae8c2f869f660d6e6078b0f184451702d45fbbd2f3a66692f80c1f50@group.calendar.google.com", name:"Addie",  color:"#ff3366" },
   { id:"jramaeker@gmail.com",                                                                       name:"Joey",   color:"#C99700" },
@@ -177,55 +125,42 @@ const CALENDARS = [
   { id:"c9a812107a0db75640adc93b84b0529027d096a869e96f14a4bdfeee9558c6f5@group.calendar.google.com", name:"Fia",    color:"#e6c700" },
   { id:"family11371226280449696764@group.calendar.google.com",                                       name:"Family", color:"#00c853" },
 ];
-
-// Kickoffs carry their own UTC offset so the countdown is right in any timezone.
-// tba:true = time not announced yet (shown as "Time TBA").
 const ND_ID = "87";
 const ND_SCHEDULE = [
-  { kick:"2026-09-06T19:30:00-04:00", opp:"Wisconsin",      oppId:"275",  venue:"Lambeau Field",          net:"NBC",     note:"Shamrock Series" },
-  { kick:"2026-09-12T15:30:00-04:00", opp:"Rice",           oppId:"242",  venue:"Notre Dame Stadium",     net:"NBC" },
-  { kick:"2026-09-19T19:30:00-04:00", opp:"Michigan State", oppId:"127",  venue:"Notre Dame Stadium",     net:"NBC" },
-  { kick:"2026-09-26T14:00:00-04:00", opp:"@ Purdue",       oppId:"2509", venue:"Ross-Ade Stadium",       net:"" },
-  { kick:"2026-10-03T12:00:00-04:00", opp:"@ North Carolina",oppId:"153", venue:"Kenan Stadium",          net:"" },
-  { kick:"2026-10-10T15:30:00-04:00", opp:"Stanford",       oppId:"24",   venue:"Notre Dame Stadium",     net:"NBC" },
-  { kick:"2026-10-17T19:30:00-04:00", opp:"@ BYU",          oppId:"252",  venue:"LaVell Edwards Stadium", net:"ABC" },
-  { kick:"2026-10-31T12:00:00-04:00", opp:"Navy",           oppId:"2426", venue:"Gillette Stadium",       net:"ABC/ESPN", note:"Shamrock Series" },
-  { kick:"2026-11-07T19:30:00-05:00", opp:"Miami",          oppId:"2390", venue:"Notre Dame Stadium",     net:"NBC", tba:true },
-  { kick:"2026-11-14T15:30:00-05:00", opp:"Boston College", oppId:"103",  venue:"Notre Dame Stadium",     net:"NBC", tba:true },
-  { kick:"2026-11-21T19:30:00-05:00", opp:"SMU",            oppId:"2567", venue:"Notre Dame Stadium",     net:"NBC", tba:true },
-  { kick:"2026-11-28T12:00:00-05:00", opp:"@ Syracuse",     oppId:"183",  venue:"JMA Wireless Dome",      net:"",    tba:true },
+  { kick:"2026-09-06T19:30:00-04:00", opp:"Wisconsin",       oppId:"275",  net:"NBC", venue:"Lambeau Field", city:"Green Bay, WI", site:"neutral" },
+  { kick:"2026-09-12T15:30:00-04:00", opp:"Rice",            oppId:"242",  net:"NBC", venue:"Notre Dame Stadium", city:"South Bend", site:"home" },
+  { kick:"2026-09-19T19:30:00-04:00", opp:"Michigan State",  oppId:"127",  net:"NBC", venue:"Notre Dame Stadium", city:"South Bend", site:"home" },
+  { kick:"2026-09-26T14:00:00-04:00", opp:"@ Purdue",        oppId:"2509", net:"", venue:"Ross-Ade Stadium", city:"West Lafayette, IN", site:"away" },
+  { kick:"2026-10-03T12:00:00-04:00", opp:"@ North Carolina",oppId:"153",  net:"", venue:"Kenan Stadium", city:"Chapel Hill, NC", site:"away" },
+  { kick:"2026-10-10T15:30:00-04:00", opp:"Stanford",        oppId:"24",   net:"NBC", venue:"Notre Dame Stadium", city:"South Bend", site:"home" },
+  { kick:"2026-10-17T19:30:00-04:00", opp:"@ BYU",           oppId:"252",  net:"ABC", venue:"LaVell Edwards Stadium", city:"Provo, UT", site:"away" },
+  { kick:"2026-10-31T12:00:00-04:00", opp:"Navy",            oppId:"2426", net:"ABC/ESPN", venue:"Gillette Stadium", city:"Foxborough, MA", site:"neutral" },
+  { kick:"2026-11-07T19:30:00-05:00", opp:"Miami",           oppId:"2390", net:"NBC", tba:true, venue:"Notre Dame Stadium", city:"South Bend", site:"home" },
+  { kick:"2026-11-14T15:30:00-05:00", opp:"Boston College",  oppId:"103",  net:"NBC", tba:true, venue:"Notre Dame Stadium", city:"South Bend", site:"home" },
+  { kick:"2026-11-21T19:30:00-05:00", opp:"SMU",             oppId:"2567", net:"NBC", tba:true, venue:"Notre Dame Stadium", city:"South Bend", site:"home" },
+  { kick:"2026-11-28T12:00:00-05:00", opp:"@ Syracuse",      oppId:"183",  net:"",    tba:true, venue:"JMA Wireless Dome", city:"Syracuse, NY", site:"away" },
 ];
-
-const WEEKS = 5;  // rows in the rolling calendar
+const EVENING_HOUR = 20;   // from 8 PM the big list shows tomorrow
+const NIGHT = [22, 6];     // dim between 10 PM and 6 AM
+const NEXT_DAYS = 6;       // rows under the big list
+const LATER_DAYS = 21;     // "Coming up" looks this far past the rows
+const LATER_MAX = 8;       // and shows at most this many (two columns of four)
 
 // ── HELPERS ──
-const DOW = ["SUN","MON","TUE","WED","THU","FRI","SAT"];
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const pad = n => String(n).padStart(2,"0");
-// Local-date key (the old board used UTC, which pushed evening events to the next day)
 const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const addDays = (d,n) => new Date(d.getFullYear(), d.getMonth(), d.getDate()+n);
+const midnight = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const shortTime = d => { let h=d.getHours(), m=d.getMinutes(), ap=h>=12?"p":"a"; h=h%12||12; return m ? `${h}:${pad(m)}${ap}` : `${h}${ap}`; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $ = id => document.getElementById(id);
 
-// ── CLOCK ──
-function tick() {
-  const now = new Date();
-  let h = now.getHours();
-  document.getElementById("ampm").textContent = h>=12 ? "PM" : "AM";
-  h = h%12||12;
-  document.getElementById("hhmm").textContent = `${h}:${pad(now.getMinutes())}`;
-  document.getElementById("dayname").textContent = now.toLocaleDateString("en-US",{weekday:"long"}).toUpperCase();
-  document.getElementById("datefull").textContent = now.toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});
-}
-
-// ── CALENDAR ──
-let events = [];  // {key, start(Date|null), allDay, title, cal}
-let lastDay = dayKey(new Date());
+// ── DATA ──
+let events = [], weather = null, live = null, calOk = true;
 
 async function fetchCal(cal) {
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()-now.getDay());  // Sunday of this week
-  const end   = new Date(start.getFullYear(), start.getMonth(), start.getDate()+WEEKS*7); // through the last grid row
+  const start = midnight(new Date()), end = addDays(start, 1 + NEXT_DAYS + LATER_DAYS + 1);
   const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events`
     + `?key=${GCAL_API_KEY}&timeMin=${start.toISOString()}&timeMax=${end.toISOString()}`
     + `&singleEvents=true&orderBy=startTime&maxResults=250&timeZone=${encodeURIComponent(TZ)}`;
@@ -235,14 +170,13 @@ async function fetchCal(cal) {
   for (const it of data.items) {
     if (!it.start) continue;
     const title = it.summary || "(No title)";
-    if (it.start.date) {                           // all-day, possibly multi-day
-      const [y,m,d] = it.start.date.split("-").map(Number);
-      const [y2,m2,d2] = it.end.date.split("-").map(Number);
+    if (it.start.date) {
+      const [y,m,d] = it.start.date.split("-").map(Number), [y2,m2,d2] = it.end.date.split("-").map(Number);
       for (let cur = new Date(y,m-1,d), stop = new Date(y2,m2-1,d2); cur < stop; cur.setDate(cur.getDate()+1))
-        out.push({ key:dayKey(cur), start:null, allDay:true, title, cal });
+        out.push({ key:dayKey(cur), start:null, end:null, allDay:true, title, cal });
     } else {
-      const s = new Date(it.start.dateTime);
-      out.push({ key:dayKey(s), start:s, allDay:false, title, cal });
+      const s = new Date(it.start.dateTime), e = it.end?.dateTime ? new Date(it.end.dateTime) : s;
+      out.push({ key:dayKey(s), start:s, end:e, allDay:false, title, cal });
     }
   }
   return out;
@@ -250,147 +184,46 @@ async function fetchCal(cal) {
 
 async function loadCalendars() {
   const results = await Promise.allSettled(CALENDARS.map(fetchCal));
-  const all = results.filter(r => r.status==="fulfilled").flatMap(r => r.value);
-  const failed = results.filter(r => r.status==="rejected");
+  const failed = results.filter(r => r.status === "rejected");
   failed.forEach(f => console.warn(f.reason));
-  // Same event on several calendars (e.g. Family + Joey) shows once
   const seen = new Set();
-  events = all.filter(e => { const k = `${e.key}|${e.title.toLowerCase()}|${e.start?.getTime() ?? "all"}`; if (seen.has(k)) return false; seen.add(k); return true; })
+  events = results.filter(r => r.status === "fulfilled").flatMap(r => r.value)
+    .filter(e => { const k = `${e.key}|${e.title.toLowerCase()}|${e.start?.getTime() ?? "all"}`; if (seen.has(k)) return false; seen.add(k); return true; })
     .sort((a,b) => a.key.localeCompare(b.key) || (a.allDay===b.allDay ? (a.start?.getTime()||0)-(b.start?.getTime()||0) : a.allDay ? -1 : 1));
-  const dot = document.getElementById("sync-dot");
-  dot.classList.toggle("err", failed.length > 0);
-  document.getElementById("updated").textContent =
-    (failed.length ? `${failed.length} calendar${failed.length>1?"s":""} failed · ` : "Synced ") +
-    new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  calOk = failed.length === 0;
+  $("sync").className = "sync" + (calOk ? "" : " err");
+  $("sync").textContent = (calOk ? "Synced " : `${failed.length} calendar${failed.length>1?"s":""} failed · `)
+    + new Date().toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 }
 
-function byDay() { const m = {}; events.forEach(e => (m[e.key] ||= []).push(e)); return m; }
-
-function buildMonth() {
-  const now = new Date(), todayKey = dayKey(now);
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()-now.getDay());
-  const last  = new Date(start.getFullYear(), start.getMonth(), start.getDate()+WEEKS*7-1);
-  const sameMo = start.getMonth()===last.getMonth();
-  document.getElementById("cal-month").innerHTML = sameMo
-    ? `${MONTHS[start.getMonth()].toUpperCase()} <em>${last.getFullYear()}</em>`
-    : `${MONTHS[start.getMonth()].slice(0,3).toUpperCase()} – ${MONTHS[last.getMonth()].slice(0,3).toUpperCase()} <em>${last.getFullYear()}</em>`;
-  const jan1 = new Date(now.getFullYear(),0,1);
-  document.getElementById("cal-week").textContent = `WEEK ${Math.ceil(((now-jan1)/864e5 + jan1.getDay()+1)/7)}`;
-  document.getElementById("cal-dow").innerHTML = DOW.map((d,i) => `<div class="cal-dow${i===now.getDay()?" today-col":""}">${d}</div>`).join("");
-
-  const map = byDay(), grid = document.getElementById("cal-grid");
-  grid.style.gridTemplateRows = `repeat(${WEEKS}, minmax(0,1fr))`;
-  const LINES = 4;   // event lines that fit in one day cell
-  let html = "";
-  for (let i=0; i<WEEKS*7; i++) {
-    const d = new Date(start.getFullYear(), start.getMonth(), start.getDate()+i), key = dayKey(d);
-    const cls = key===todayKey ? "today" : key<todayKey ? "past" : "";
-    const mo = (d.getDate()===1 || i===0) ? `<span class="mo">${MONTHS[d.getMonth()].slice(0,3).toUpperCase()}</span>` : "";
-    let inner = `<div class="day-num">${mo}${d.getDate()}</div>`;
-    const evs = map[key] || [];
-    // 1–2 events: let titles wrap to two lines. 3–4: one line each. 5+: three lines and "+N more".
-    const shown = evs.length > LINES ? evs.slice(0,LINES-1) : evs;
-    const wrap = evs.length <= LINES/2;
-    shown.forEach(e => {
-      inner += `<div class="pill${wrap?" wrap":""}" style="background:${e.cal.color}55;border-color:${e.cal.color}">${e.allDay?"":`<span class="t">${shortTime(e.start)}</span>`}${esc(e.title)}</div>`;
-    });
-    if (evs.length > shown.length) inner += `<div class="more">+${evs.length-shown.length} more</div>`;
-    html += `<div class="cal-day ${cls}">${inner}</div>`;
-  }
-  grid.innerHTML = html;
-}
-
-function buildAgenda() {
-  const now = new Date(), map = byDay();
-  let html = "";
-  for (let i=0; i<3; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate()+i);
-    const evs = (map[dayKey(d)] || []).filter(e => i>0 || e.allDay || e.start > new Date(now - 60*60*1000)); // today: drop events that ended over an hour ago
-    const shown = evs.length > 4 ? evs.slice(0,3) : evs;
-    const body = shown.length
-      ? shown.map(e => `<div class="chip"><div class="chip-bar" style="background:${e.cal.color}"></div><div class="chip-body"><div class="chip-time">${e.allDay?"All day":shortTime(e.start)}</div><div class="chip-title">${esc(e.title)}</div></div></div>`).join("")
-        + (evs.length>shown.length ? `<div class="ag-more">+${evs.length-shown.length} more</div>` : "")
-      : `<div class="no-ev">Nothing scheduled</div>`;
-    html += `<div class="ag-col"><div class="ag-head${i===0?" today":""}"><div class="ag-dow">${i===0?"TODAY":i===1?"TOMORROW":DOW[d.getDay()]}</div><div class="ag-num">${d.getDate()}</div></div><div class="ag-events">${body}</div></div>`;
-  }
-  document.getElementById("agenda").innerHTML = html;
-}
-
-function buildLegend() {
-  document.getElementById("legend").innerHTML = CALENDARS.map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join("");
-}
-
-async function refreshCalendar() {
-  try { await loadCalendars(); } catch(e) { console.error(e); }
-  buildMonth(); buildAgenda();
-}
-
-// ── WEATHER ──
-const WMO_ICON = {0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",55:"🌧️",56:"🌧️",57:"🌧️",61:"🌧️",63:"🌧️",65:"🌧️",66:"🌧️",67:"🌧️",71:"🌨️",73:"🌨️",75:"❄️",77:"🌨️",80:"🌦️",81:"🌧️",82:"⛈️",85:"🌨️",86:"❄️",95:"⛈️",96:"⛈️",99:"⛈️"};
-const WMO_DESC = {0:"Clear",1:"Mostly Clear",2:"Partly Cloudy",3:"Overcast",45:"Fog",48:"Fog",51:"Light Drizzle",53:"Drizzle",55:"Heavy Drizzle",56:"Freezing Drizzle",57:"Freezing Drizzle",61:"Light Rain",63:"Rain",65:"Heavy Rain",66:"Freezing Rain",67:"Freezing Rain",71:"Light Snow",73:"Snow",75:"Heavy Snow",77:"Snow Grains",80:"Showers",81:"Showers",82:"Heavy Showers",85:"Snow Showers",86:"Heavy Snow Showers",95:"Thunderstorms",96:"T-Storms & Hail",99:"T-Storms & Hail"};
+const WMO = {0:["☀️","Clear"],1:["🌤️","Mostly clear"],2:["⛅","Partly cloudy"],3:["☁️","Overcast"],45:["☁️","Fog"],48:["☁️","Fog"],51:["🌦️","Light drizzle"],53:["🌦️","Drizzle"],55:["🌧️","Drizzle"],56:["🌧️","Freezing drizzle"],57:["🌧️","Freezing drizzle"],61:["🌧️","Light rain"],63:["🌧️","Rain"],65:["🌧️","Heavy rain"],66:["🌧️","Freezing rain"],67:["🌧️","Freezing rain"],71:["🌨️","Light snow"],73:["🌨️","Snow"],75:["❄️","Heavy snow"],77:["🌨️","Snow"],80:["🌦️","Showers"],81:["🌧️","Showers"],82:["⛈️","Heavy showers"],85:["🌨️","Snow showers"],86:["❄️","Snow showers"],95:["⛈️","Thunderstorms"],96:["⛈️","T-storms"],99:["⛈️","T-storms"]};
+const wmo = c => WMO[c] || ["🌡️","—"];
 
 async function loadWeather(retries=6) {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}`
       + `&current=temperature_2m,weather_code,wind_speed_10m`
       + `&daily=temperature_2m_max,temperature_2m_min,weather_code,precipitation_probability_max`
-      + `&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=5&timezone=${encodeURIComponent(TZ)}`;
+      + `&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=8&timezone=${encodeURIComponent(TZ)}`;
     const r = await fetch(url); if (!r.ok) throw new Error("weather " + r.status);
-    const { current:c, daily:d } = await r.json();
-    document.getElementById("wx-temp").textContent = Math.round(c.temperature_2m);
-    document.getElementById("wx-icon").textContent = WMO_ICON[c.weather_code] || "🌡️";
-    document.getElementById("wx-desc").textContent = WMO_DESC[c.weather_code] || "—";
-    document.getElementById("wx-hilo").textContent = `↑${Math.round(d.temperature_2m_max[0])}° ↓${Math.round(d.temperature_2m_min[0])}°`;
-    document.getElementById("wx-mini").textContent = `💧${d.precipitation_probability_max[0] ?? 0}% · 💨${Math.round(c.wind_speed_10m)} mph`;
-    document.getElementById("forecast").innerHTML = d.time.map((t,i) => {
-      const day = new Date(t+"T12:00:00");
-      return `<div class="fc-day${i===0?" today":""}"><div class="fc-row"><div class="fc-label">${i===0?"TODAY":DOW[day.getDay()]}</div><div class="fc-precip">💧${d.precipitation_probability_max[i] ?? 0}%</div></div><div class="fc-row"><div class="fc-icon">${WMO_ICON[d.weather_code[i]]||"🌡️"}</div><div class="fc-temps"><div class="fc-hi">${Math.round(d.temperature_2m_max[i])}°</div><div class="fc-lo">${Math.round(d.temperature_2m_min[i])}°</div></div></div></div>`;
-    }).join("");
+    const j = await r.json();
+    weather = { now:j.current, days:{} };
+    j.daily.time.forEach((t,i) => weather.days[t] = { hi:Math.round(j.daily.temperature_2m_max[i]), lo:Math.round(j.daily.temperature_2m_min[i]), code:j.daily.weather_code[i], rain:j.daily.precipitation_probability_max[i] ?? 0 });
+    render();
   } catch(e) {
     console.error(e);
-    if (retries > 0) setTimeout(() => loadWeather(retries-1), 30000);  // Open-Meteo has brief 503 outages; keep trying for ~3 min
+    if (retries > 0) setTimeout(() => loadWeather(retries-1), 30000);   // Open-Meteo has brief 503 outages
   }
 }
 
-// ── NOTRE DAME PANEL ──
+// ── NOTRE DAME ──
 const GAME_WINDOW = 4*60*60*1000;
 const logo = id => `https://a.espncdn.com/i/teamlogos/ncaa/500/${id}.png`;
-let live = null;   // last ESPN result during a game window
-
 function nextGame() {
   const now = Date.now();
   for (const g of ND_SCHEDULE) { const k = new Date(g.kick); if (k.getTime()+GAME_WINDOW > now) return { ...g, k }; }
   return null;
 }
-
-function renderND() {
-  const panel = document.getElementById("nd-panel"), g = nextGame();
-  if (!g) { panel.innerHTML = `<div class="nd-info" style="text-align:center"><div class="nd-matchup">☘ SEASON COMPLETE · GO IRISH ☘</div></div>`; return; }
-  const inWindow = Date.now() >= g.k.getTime();
-  if (inWindow && live) {
-    const ndWin = live.nd >= live.opp;
-    panel.innerHTML = `${live.final ? "" : `<div class="nd-live">● LIVE</div>`}
-      <div class="nd-score"><img src="${logo(ND_ID)}" style="height:3.8vh"><div class="nd-score-num ${ndWin?"win":"lose"}">${live.nd}</div>
-      <div class="nd-score-num lose" style="opacity:.4">–</div><div class="nd-score-num ${ndWin?"lose":"win"}">${live.opp}</div><img src="${logo(g.oppId)}" style="height:3.8vh"></div>
-      <div class="nd-status">${live.final ? "FINAL" : esc(live.status)}</div>`;
-    return;
-  }
-  const diff = g.k - Date.now();
-  let label = "KICKOFF IN", val, gameDay = false;
-  if (diff <= 0) { label = "GAME TIME"; val = "KICKOFF!"; gameDay = true; }
-  else {
-    const dd = Math.floor(diff/864e5), hh = Math.floor(diff%864e5/36e5), mm = Math.floor(diff%36e5/6e4);
-    val = dd > 0 ? `${dd}D ${pad(hh)}H ${pad(mm)}M` : `${pad(hh)}:${pad(mm)}:${pad(Math.floor(diff%6e4/1e3))}`;
-    gameDay = dd === 0;
-  }
-  const when = g.k.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:TZ})
-    + " · " + (g.tba ? "Time TBA" : g.k.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ}) + " ET");
-  const details = [when, g.net].filter(Boolean).join(" · ");
-  panel.innerHTML = `<div class="nd-logos"><img src="${logo(ND_ID)}" alt="Notre Dame"><div class="nd-vs">VS</div><img src="${logo(g.oppId)}" alt=""></div>
-    <div class="nd-info"><div class="nd-matchup"><em>NOTRE DAME</em> ${g.opp.startsWith("@") ? "" : "VS "}${esc(g.opp.toUpperCase())}</div><div class="nd-details">${esc(details)}</div></div>
-    <div class="nd-count"><div class="nd-count-label">${label}</div><div class="nd-count-val${gameDay?" game-day":""}">${g.tba && !gameDay ? `${Math.ceil(diff/864e5)} DAYS` : val}</div></div>`;
-}
-
 async function pollLive() {
   const g = nextGame();
   if (!g || Date.now() < g.k.getTime()) { live = null; return; }
@@ -401,20 +234,163 @@ async function pollLive() {
     if (!ev) return;
     const comp = ev.competitions[0], st = comp.status;
     const nd = comp.competitors.find(c => c.team.id === ND_ID), opp = comp.competitors.find(c => c.team.id !== ND_ID);
-    live = { nd:+nd.score||0, opp:+opp.score||0, final:st.type.state==="post", status: st.type.state==="pre" ? "PREGAME" : `Q${st.period} ${st.displayClock}` };
+    live = { nd:+nd.score||0, opp:+opp.score||0, final:st.type.state==="post", pre:st.type.state==="pre", status:`Q${st.period} ${st.displayClock}` };
+    render();
   } catch(e) { console.warn("ESPN", e); }
 }
 
+// ── RENDER ──
+function renderTop(now) {
+  let h = now.getHours();
+  $("time").innerHTML = `${h%12||12}:${pad(now.getMinutes())}<small>${h>=12?"PM":"AM"}</small>`;
+  $("date").innerHTML = `<b>${now.toLocaleDateString("en-US",{weekday:"long"})}</b> · ${now.toLocaleDateString("en-US",{month:"long",day:"numeric"})}`;
+  if (weather) {
+    const today = weather.days[dayKey(now)], [ic, desc] = wmo(weather.now.weather_code);
+    $("wx-now").innerHTML = `<span>${ic}</span>${Math.round(weather.now.temperature_2m)}°`;
+    $("wx-desc").textContent = today ? `${desc} · ${today.hi}° / ${today.lo}° · ${today.rain}% rain` : desc;
+  }
+}
+
+function renderGame(now) {
+  const g = nextGame(), line = $("game-line"), big = $("gameday");
+  if (!g) { line.style.display = "none"; big.classList.remove("on"); return; }
+  const gameDay = dayKey(g.k) === dayKey(now);
+  const opp = g.opp.replace(/^@\s*/, "");
+  const vs = g.site === "away" ? `@ ${opp}` : `vs ${opp}`;
+  const where = [g.venue, g.city].filter(Boolean).join(", ") + (g.site === "neutral" ? " · neutral site" : g.site === "home" ? " · home" : " · away");
+  const when = g.k.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",timeZone:TZ})
+    + " · " + (g.tba ? "time TBA" : g.k.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ}) + " ET")
+    + (g.net ? ` · ${g.net}` : "");
+  if (gameDay) {
+    line.style.display = "none"; big.classList.add("on");
+    let mid;
+    if (live && !live.pre) {
+      const w = live.nd >= live.opp;
+      mid = `<div class="score"><span class="${w?"w":""}">${live.nd}</span> – <span class="${w?"":"w"}">${live.opp}</span></div><div class="st">${live.final ? "Final" : `<span class="live">● Live</span> · ${esc(live.status)}`}</div>`;
+    } else {
+      const diff = g.k - now, hh = Math.floor(diff/36e5), mm = Math.floor(diff%36e5/6e4);
+      mid = `<div class="score">${diff > 0 ? `${hh}:${pad(mm)}` : "Kickoff"}</div><div class="st">Game day · ${esc(when)}</div>`;
+    }
+    big.innerHTML = `<img src="${logo(ND_ID)}" alt="Notre Dame"><div class="mid">${mid}<div class="where">Notre Dame ${esc(vs)} · 📍 ${esc(where)}</div></div><img src="${logo(g.oppId)}" alt="">`;
+    return;
+  }
+  big.classList.remove("on"); line.style.display = "";
+  const days = Math.ceil((midnight(g.k) - midnight(now)) / 864e5);
+  line.innerHTML = `<img src="${logo(ND_ID)}" alt=""><img src="${logo(g.oppId)}" alt=""><div class="gl-main"><b>Notre Dame ${esc(vs)}</b><div class="wh">${esc(when)}</div><div class="where">📍 ${esc(where)}</div></div><div class="gl-when"><div class="cd">${days === 1 ? "Tomorrow" : `${days} days`}</div></div>`;
+}
+
+function evTime(e) { return e.allDay ? "All day" : shortTime(e.start); }
+
+function renderHero(now, map) {
+  const evening = now.getHours() >= EVENING_HOUR;
+  const day = evening ? addDays(now, 1) : now;
+  const evs = map[dayKey(day)] || [];
+  let nextMarked = false;
+  const items = evs.map(e => {
+    const done = !evening && !e.allDay && e.end < now;
+    let cls = done ? "done" : "";
+    if (!done && !e.allDay && !nextMarked) { cls = "next"; nextMarked = true; }
+    return `<li class="${cls}"><span class="tm">${evTime(e)}</span><span class="dot" style="background:${e.cal.color}"></span><span class="ti">${esc(e.title)}</span></li>`;
+  });
+  const left = evs.filter(e => evening || e.allDay || e.end >= now).length;
+  $("hero").innerHTML = `<h2>${evening ? "Tomorrow" : "Today"}<span>${day.toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}</span></h2>`
+    + (evs.length ? `<ul>${items.join("")}</ul>` + (left ? "" : `<div class="empty">All done for today</div>`)
+                  : `<div class="empty">Nothing on the calendar</div>`);
+  return day;
+}
+
+function renderDays(heroDay, map) {
+  let html = "";
+  for (let i = 1; i <= NEXT_DAYS; i++) {
+    const d = addDays(heroDay, i), key = dayKey(d), evs = map[key] || [], w = weather?.days[key];
+    const wx = w ? `<div class="wx">${w.rain >= 30 ? `💧${w.rain}% ` : ""}${wmo(w.code)[0]} <b>${w.hi}°</b> ${w.lo}°</div>` : `<div class="wx"></div>`;
+    const body = evs.length
+      ? evs.map(e => `<div class="ev"><span class="dot" style="background:${e.cal.color}"></span>${e.allDay ? "" : `<span class="tm">${shortTime(e.start)}</span>`}<span>${esc(e.title)}</span></div>`).join("")
+      : `<div class="none">—</div>`;
+    const label = i === 1 && heroDay.getTime() === midnight(new Date()).getTime() ? "Tomorrow" : DOW[d.getDay()];
+    html += `<div class="day${d.getDay()%6===0?" weekend":""}"><div class="lbl"><div class="dn">${label}</div><div class="dd">${d.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</div></div><div class="evs">${body}</div>${wx}</div>`;
+  }
+  $("days").innerHTML = html;
+}
+
+function renderLater(heroDay) {
+  const from = dayKey(addDays(heroDay, NEXT_DAYS+1)), to = dayKey(addDays(heroDay, NEXT_DAYS+LATER_DAYS));
+  const soon = new Set(events.filter(e => e.key < from).map(e => e.title.toLowerCase()));
+  const seen = new Set(), picks = [];
+  for (const e of events) {
+    if (e.key < from || e.key > to) continue;
+    const t = e.title.toLowerCase();
+    if (soon.has(t) || seen.has(t)) continue;   // skip routines already on screen, and repeats
+    seen.add(t); picks.push(e);
+    if (picks.length >= LATER_MAX) break;
+  }
+  $("later").innerHTML = picks.length
+    ? `<h3>Coming up</h3><ul>${picks.map(e => { const [y,m,d] = e.key.split("-").map(Number), dt = new Date(y,m-1,d);
+        return `<li><span class="wd">${DOW[dt.getDay()]} ${dt.getMonth()+1}/${dt.getDate()}</span><span class="dot" style="background:${e.cal.color}"></span><span>${esc(e.title)}</span></li>`; }).join("")}</ul>`
+    : "";
+  return picks.length;
+}
+
+function render() {
+  const now = new Date(), map = {};
+  events.forEach(e => (map[e.key] ||= []).push(e));
+  document.body.classList.toggle("night", now.getHours() >= NIGHT[0] || now.getHours() < NIGHT[1]);
+  renderTop(now); renderGame(now);
+  const heroDay = midnight(renderHero(now, map));
+  renderDays(heroDay, map);
+  renderLater(heroDay);
+  fit();
+}
+
+// ── FIT: largest text size that shows everything ──
+// The page is a column of natural-height blocks plus the day rows, which share
+// what's left. Binary-search the root font size until nothing overflows.
+// "Coming up" drops items from the end before the text gets too small.
+function overflows() {
+  const page = $("page"), days = $("days");
+  return page.scrollHeight > window.innerHeight + 1 || days.scrollHeight > days.clientHeight + 1
+      || [...document.querySelectorAll(".evs, .hero, .top, .game-line, .gl-main")].some(el => el.scrollWidth > el.clientWidth + 1);
+}
+function fitSize() {
+  let lo = 5, hi = window.innerHeight / 90;   // px per rem
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) / 2;
+    document.documentElement.style.fontSize = mid + "px";
+    if (overflows()) hi = mid; else lo = mid;
+  }
+  document.documentElement.style.fontSize = lo + "px";
+  return lo;
+}
+function fit() {
+  const MIN_READABLE = window.innerHeight / 210;   // below this, trim "Coming up" first
+  let size = fitSize();
+  const items = () => document.querySelectorAll(".later li");
+  while (size < MIN_READABLE && items().length) {
+    const list = items(); list[list.length-1].remove();
+    if (!items().length) $("later").innerHTML = "";
+    size = fitSize();
+  }
+}
+
+function buildLegend() {
+  $("legend").innerHTML = CALENDARS.map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join("");
+}
+
 // ── START ──
-tick(); buildLegend(); renderND();
-refreshCalendar(); loadWeather(); pollLive();
+buildLegend();
+let lastDay = dayKey(new Date()), lastMin = -1;
+async function refreshCalendar() { try { await loadCalendars(); } catch(e) { console.error(e); } render(); }
+render(); refreshCalendar(); loadWeather(); pollLive();
 setInterval(() => {
-  tick(); renderND();
-  if (dayKey(new Date()) !== lastDay) { lastDay = dayKey(new Date()); refreshCalendar(); loadWeather(); } // roll over at midnight
+  const now = new Date();
+  if (now.getMinutes() !== lastMin) { lastMin = now.getMinutes(); render(); }   // a re-render per minute keeps "next" and the countdown current
+  if (dayKey(now) !== lastDay) { lastDay = dayKey(now); refreshCalendar(); loadWeather(); }
 }, 1000);
 setInterval(refreshCalendar, 15*60*1000);
 setInterval(loadWeather, 15*60*1000);
 setInterval(pollLive, 30*1000);
+window.addEventListener("resize", fit);
+document.fonts?.ready.then(fit);
 </script>
 </body>
 </html>
